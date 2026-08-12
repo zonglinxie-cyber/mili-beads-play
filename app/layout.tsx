@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description: "给米粒的拼豆图纸与触控游戏：完整图案、逐颗挑战、作品收藏。",
   manifest: "/manifest.webmanifest",
   applicationName: "米粒拼豆社",
+  icons: { icon: "/app-icon-192.png", apple: "/apple-touch-icon.png" },
   appleWebApp: { capable: true, title: "米粒拼豆", statusBarStyle: "default" },
   openGraph: { title: "米粒拼豆社", description: "把小豆子拼成大冒险。", images: ["/og-v2.png"] },
   twitter: { card: "summary_large_image", title: "米粒拼豆社", description: "把小豆子拼成大冒险。", images: ["/og-v2.png"] },
