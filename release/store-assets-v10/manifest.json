@@ -1,12 +1,12 @@
 {
   "generatedAt": "2026-08-12",
   "provenance": {
-    "featureGraphic": "Deterministic composition using current app palette and checked-in rocket-cat grid; no new AI asset.",
-    "icon": "Opaque RGBA 32-bit derivative of public/app-icon-512.png. Baked black rounded-corner surround was mechanically replaced with a full-square purple background for Play dynamic masking.",
+    "featureGraphic": "Deterministic composition using the reviewed v4 cat brand source, current app palette, and checked-in rocket-cat grid.",
+    "icon": "Opaque RGBA 32-bit derivative of the reviewed v4 public/app-icon-512.png, with a full-square purple background for Play dynamic masking.",
     "screenshots": "Captured from the final production Web build after driving the real 170-bead E2E completion path. Play captures use a 540x1080 viewport at 2x. App Store captures use a 440x956 viewport at 3x and are explicitly labeled web composites, not device screenshots.",
     "codeHashes": {
-      "app/page.tsx": "001d21b659111cef33c18a9b7df7302d579ed28b16f08225c0e4fd41862dce0e",
-      "app/globals.css": "1d450cfd5df93e67e185a2193ac98256f31bf7032b584a48ee5c94b103cdf2be",
+      "app/page.tsx": "cd5930786a8516d2dc5bac7c2c63fe363a7a0707f09bb1de75bfe6610fe6e8df",
+      "app/globals.css": "3932ab8d91b2fe895611b1a0fd003259de75af88545e8697b4e95e4b4d250d3d",
       "app/patterns.ts": "98f73673f3feb2e7b736d0026affa036f5feb171956bb798f6c5dc57e9cd5ac9"
     },
     "completionProof": "Both capture runs asserted 100% progress, the visible 完成啦，米粒！ dialog, all three animation layer descriptions, and a generated poster natural size of 1200x1500."
@@ -18,7 +18,7 @@
       "height": 500,
       "mode": "RGB",
       "format": "PNG",
-      "bytes": 157791
+      "bytes": 238796
     },
     {
       "file": "google-play-icon-512.png",
@@ -26,7 +26,7 @@
       "height": 512,
       "mode": "RGBA",
       "format": "PNG",
-      "bytes": 389686
+      "bytes": 473033
     },
     {
       "file": "google-play-phone-01-home-1080x2160.png",
@@ -34,7 +34,7 @@
       "height": 2160,
       "mode": "RGB",
       "format": "PNG",
-      "bytes": 495398
+      "bytes": 506877
     },
     {
       "file": "google-play-phone-02-game-zones-1080x2160.png",
@@ -42,7 +42,7 @@
       "height": 2160,
       "mode": "RGB",
       "format": "PNG",
-      "bytes": 98306
+      "bytes": 96987
     },
     {
       "file": "google-play-phone-03-complete-1080x2160.png",
@@ -50,7 +50,7 @@
       "height": 2160,
       "mode": "RGB",
       "format": "PNG",
-      "bytes": 285072
+      "bytes": 291772
     },
     {
       "file": "google-play-phone-04-animation-1080x2160.png",
@@ -58,7 +58,7 @@
       "height": 2160,
       "mode": "RGB",
       "format": "PNG",
-      "bytes": 364937
+      "bytes": 356293
     },
     {
       "file": "google-play-phone-05-print-preview-1080x2160.png",
@@ -66,7 +66,7 @@
       "height": 2160,
       "mode": "RGB",
       "format": "PNG",
-      "bytes": 159138
+      "bytes": 165699
     },
     {
       "file": "app-store-iphone69-web-composite-01-home-1320x2868.png",
@@ -74,7 +74,7 @@
       "height": 2868,
       "mode": "RGB",
       "format": "PNG",
-      "bytes": 699911
+      "bytes": 726038
     },
     {
       "file": "app-store-iphone69-web-composite-02-game-zones-1320x2868.png",
@@ -90,7 +90,7 @@
       "height": 2868,
       "mode": "RGB",
       "format": "PNG",
-      "bytes": 442887
+      "bytes": 444537
     },
     {
       "file": "app-store-iphone69-web-composite-04-animation-1320x2868.png",
@@ -98,7 +98,7 @@
       "height": 2868,
       "mode": "RGB",
       "format": "PNG",
-      "bytes": 539820
+      "bytes": 540220
     },
     {
       "file": "app-store-iphone69-web-composite-05-print-preview-1320x2868.png",
@@ -106,7 +106,7 @@
       "height": 2868,
       "mode": "RGB",
       "format": "PNG",
-      "bytes": 211127
+      "bytes": 222392
     },
     {
       "file": "print-source-rocket-cat-1200x1500.png",

@@ -8,48 +8,35 @@ import { Share } from "@capacitor/share";
 import { ArrowDown, ArrowLeft, ArrowRight, BookOpen, Check, ChevronRight, Flame, Home as HomeIcon, Play, Plus, RotateCcw, Sparkles, Star, X } from "lucide-react";
 import { PATTERNS, Pattern, targetCount } from "./patterns";
 import { PrivacyContent } from "./privacy-content";
+import { DELETE_PENDING_KEY, DELETE_TOMBSTONE, emptySaveSnapshot, GameSave, LEGACY_CLEAN_KEY, LEGACY_CLEAN_VALUE, LEGACY_SAVE_KEYS, normalizeSave, readLocalSave, SAVE_KEY, SaveSnapshot, serializeSave } from "./save-store";
+import { DurableStore } from "./durable-store";
 
 type Poster = { src: string; filename: string; kind: "print" | "work" };
-type GameSave = { completed?: string[]; boards?: Record<string, string[]>; activityDates?: string[] };
+type ParentChallenge = { left: number; right: number; operator: "×"; answer: number };
+type ParentAction = "share" | "print";
+type SavePhase = "hydrating" | "ready" | "read-error" | "deleting" | "delete-error";
 
 const BOARD_SIZE = 18;
 const ZONE_SIZE = 6;
-const SAVE_KEY = "mili-game-v3";
-const LEGACY_SAVE_KEYS = ["mili-game-v2"];
 const ZONE_LABELS = ["左上", "上中", "右上", "左中", "正中", "右中", "左下", "下中", "右下"];
 
 const keys = (p: Pattern) => Object.keys(p.palette);
 const localDay = () => new Date().toLocaleDateString("en-CA");
 const dayDifference = (newer: string, older: string) => Math.round((Date.parse(`${newer}T12:00:00`) - Date.parse(`${older}T12:00:00`)) / 86400000);
-const normalizeSave = (value: unknown): GameSave => {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  const source = value as Record<string, unknown>;
-  const validIds = new Set(PATTERNS.map(pattern => pattern.id));
-  const completed = Array.isArray(source.completed)
-    ? Array.from(new Set(source.completed.filter((id): id is string => typeof id === "string" && validIds.has(id))))
-    : [];
-  const activityDates = Array.isArray(source.activityDates)
-    ? Array.from(new Set(source.activityDates.filter((date): date is string => typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(`${date}T12:00:00`)))))
-    : [];
-  const boards: Record<string, string[]> = {};
-  if (source.boards && typeof source.boards === "object" && !Array.isArray(source.boards)) {
-    for (const pattern of PATTERNS) {
-      const candidate = (source.boards as Record<string, unknown>)[pattern.id];
-      if (!Array.isArray(candidate) || candidate.length !== BOARD_SIZE * BOARD_SIZE) continue;
-      const target = pattern.rows.join("").split("");
-      boards[pattern.id] = candidate.map((cell, index) => typeof cell === "string" && cell === target[index] ? cell : ".");
-    }
-  }
-  return { completed, boards, activityDates };
+const randomInt = (maximum: number) => {
+  const values = new Uint32Array(1);
+  if (globalThis.crypto?.getRandomValues) { globalThis.crypto.getRandomValues(values); return values[0] % maximum; }
+  return Math.floor(Math.random() * maximum);
 };
-const readSave = (): GameSave => {
-  if (typeof window === "undefined") return {};
-  for (const key of [SAVE_KEY, ...LEGACY_SAVE_KEYS]) {
-    const raw = localStorage.getItem(key);
-    if (!raw) continue;
-    try { return normalizeSave(JSON.parse(raw)); } catch { /* try an older intact save */ }
+const makeParentChallenge = (previous?: ParentChallenge): ParentChallenge => {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const left = 237 + randomInt(556);
+    const right = 24 + randomInt(65);
+    const challenge: ParentChallenge = { left, right, operator: "×", answer: left * right };
+    if (!previous || challenge.left !== previous.left || challenge.right !== previous.right) return challenge;
   }
-  return {};
+  const left = previous!.left === 792 ? 791 : previous!.left + 1;
+  return { ...previous!, left, answer: left * previous!.right };
 };
 const streakFrom = (dates: string[]) => {
   const unique = Array.from(new Set(dates)).sort().reverse();
@@ -69,16 +56,19 @@ const zoneIndices = (zone: number) => {
   });
 };
 
-function DialogFrame({ className, label, onClose, children }: { className: string; label: string; onClose: () => void; children: ReactNode }) {
+function DialogFrame({ className, label, onClose, children, inactive = false }: { className: string; label: string; onClose: () => void; children: ReactNode; inactive?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
+  const inactiveRef = useRef(inactive);
   useEffect(() => { closeRef.current = onClose; }, [onClose]);
+  useEffect(() => { inactiveRef.current = inactive; }, [inactive]);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const panel = ref.current;
-    const focusable = () => Array.from(panel?.querySelectorAll<HTMLElement>('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])') ?? []);
-    focusable()[0]?.focus();
+    const focusable = () => Array.from(panel?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])') ?? []);
+    if (!inactiveRef.current) focusable()[0]?.focus();
     const handleKey = (event: KeyboardEvent) => {
+      if (inactiveRef.current) return;
       if (event.key === "Escape") { event.preventDefault(); closeRef.current(); return; }
       if (event.key !== "Tab") return;
       const items = focusable();
@@ -90,7 +80,7 @@ function DialogFrame({ className, label, onClose, children }: { className: strin
     document.addEventListener("keydown", handleKey);
     return () => { document.removeEventListener("keydown", handleKey); previous?.focus(); };
   }, []);
-  return <div className={className} role="dialog" aria-modal="true" aria-label={label} ref={ref}>{children}</div>;
+  return <div className={className} role="dialog" aria-modal={inactive ? undefined : true} aria-hidden={inactive ? true : undefined} inert={inactive ? true : undefined} aria-label={label} ref={ref}>{children}</div>;
 }
 
 function Art({ pattern, bead = false, board, hint = false, selected, animated = false }: { pattern: Pattern; bead?: boolean; board?: string[]; hint?: boolean; selected?: string; animated?: boolean }) {
@@ -164,6 +154,8 @@ function makePoster(pattern: Pattern, kind: "print" | "work") {
 }
 
 export default function Home() {
+  const [initialSave] = useState<GameSave>(() => readLocalSave());
+  const isNative = Capacitor.isNativePlatform();
   const [tab, setTab] = useState<"home" | "library" | "game" | "works">("home");
   const [activeId, setActiveId] = useState(PATTERNS[0].id);
   const [board, setBoard] = useState<string[]>([]);
@@ -174,21 +166,38 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [filter, setFilter] = useState("全部");
   const [zone, setZone] = useState(0);
-  const [completed, setCompleted] = useState<string[]>(() => {
-    return readSave().completed ?? [];
-  });
-  const [savedBoards, setSavedBoards] = useState<Record<string, string[]>>(() => {
-    return readSave().boards ?? {};
-  });
-  const [activityDates, setActivityDates] = useState<string[]>(() => readSave().activityDates ?? []);
+  const [completed, setCompleted] = useState<string[]>(() => initialSave.completed ?? []);
+  const [savedBoards, setSavedBoards] = useState<Record<string, string[]>>(() => initialSave.boards ?? {});
+  const [activityDates, setActivityDates] = useState<string[]>(() => initialSave.activityDates ?? []);
   const [celebrate, setCelebrate] = useState(false);
   const [poster, setPoster] = useState<Poster | null>(null);
   const [animationId, setAnimationId] = useState<string | null>(null);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
+  const [parentHold, setParentHold] = useState<ParentAction | null>(null);
+  const [parentChallenge, setParentChallenge] = useState<ParentChallenge | null>(null);
+  const [parentAction, setParentAction] = useState<ParentAction | null>(null);
+  const [parentAnswer, setParentAnswer] = useState("");
+  const [parentError, setParentError] = useState("");
   const [installEvent, setInstallEvent] = useState<Event & { prompt?: () => Promise<void> } | null>(null);
+  const [savePhase, setSavePhaseState] = useState<SavePhase>(() => isNative ? "hydrating" : "ready");
+  const [saveError, setSaveError] = useState("");
   const gameRef = useRef<HTMLDivElement>(null);
+  const parentHoldTimer = useRef<number | null>(null);
+  const nativeSaveQueue = useRef<Promise<void>>(Promise.resolve());
+  const savePhaseRef = useRef<SavePhase>(isNative ? "hydrating" : "ready");
+  const saveGenerationRef = useRef(0);
+  const deleteRequestedRef = useRef(false);
+  const canonicalSaveRef = useRef<SaveSnapshot>({
+    completed: initialSave.completed ?? [],
+    boards: initialSave.boards ?? {},
+    activityDates: initialSave.activityDates ?? [],
+  });
+  const boardRef = useRef(board);
+  const completedRef = useRef(completed);
+  const savedBoardsRef = useRef(savedBoards);
+  const activityDatesRef = useRef(activityDates);
   const pattern = PATTERNS.find(p => p.id === activeId) ?? PATTERNS[0];
   const target = pattern.rows.join("").split("");
   const done = board.reduce((n, v, i) => n + (v !== "." && v === target[i] ? 1 : 0), 0);
@@ -201,7 +210,71 @@ export default function Home() {
   const activeZoneIndices = zoneIndices(zone);
   const activeZoneTargets = activeZoneIndices.filter(index => target[index] !== ".");
   const activeZoneDone = activeZoneTargets.filter(index => board[index] === target[index]).length;
-  const overlayOpen = Boolean(celebrate || poster || animationPattern || showPrivacy || confirmReset);
+  const overlayOpen = Boolean(celebrate || poster || animationPattern || showPrivacy || confirmReset || parentChallenge);
+
+  const setSavePhase = (phase: SavePhase) => {
+    savePhaseRef.current = phase;
+    setSavePhaseState(phase);
+  };
+
+  const enqueueNative = <T,>(operation: () => Promise<T>): Promise<T> => {
+    const result = nativeSaveQueue.current.then(operation, operation);
+    nativeSaveQueue.current = result.then(() => undefined, () => undefined);
+    return result;
+  };
+
+  const commitSnapshot = (snapshot: SaveSnapshot, persistLocal = true) => {
+    canonicalSaveRef.current = snapshot;
+    completedRef.current = snapshot.completed;
+    savedBoardsRef.current = snapshot.boards;
+    activityDatesRef.current = snapshot.activityDates;
+    setCompleted(snapshot.completed);
+    setSavedBoards(snapshot.boards);
+    setActivityDates(snapshot.activityDates);
+    if (persistLocal) localStorage.setItem(SAVE_KEY, serializeSave(snapshot));
+  };
+
+  const clearDeletedSnapshot = () => {
+    const empty = emptySaveSnapshot();
+    localStorage.removeItem(SAVE_KEY);
+    LEGACY_SAVE_KEYS.forEach(key => localStorage.removeItem(key));
+    commitSnapshot(empty, false);
+    boardRef.current = [];
+    setBoard([]);
+  };
+
+  const completeDeleteTransaction = async (generation: number, writeTombstone: boolean) => {
+    const assertCurrent = () => {
+      if (generation !== saveGenerationRef.current || savePhaseRef.current !== "deleting") throw new Error("stale delete transaction");
+    };
+    const empty = emptySaveSnapshot();
+    if (isNative) {
+      if (writeTombstone) {
+        await enqueueNative(() => DurableStore.set({ key: DELETE_PENDING_KEY, value: DELETE_TOMBSTONE }));
+        assertCurrent();
+      }
+      await enqueueNative(() => DurableStore.remove({ key: SAVE_KEY }));
+      assertCurrent();
+      // Keep a durable empty canonical snapshot before retiring the tombstone.
+      // This prevents a not-yet-flushed WebView localStorage copy from reviving deleted work.
+      await enqueueNative(() => DurableStore.set({ key: SAVE_KEY, value: serializeSave(empty) }));
+      assertCurrent();
+      await enqueueNative(() => DurableStore.clearLegacy());
+      assertCurrent();
+      await enqueueNative(() => DurableStore.set({ key: LEGACY_CLEAN_KEY, value: LEGACY_CLEAN_VALUE }));
+      assertCurrent();
+    } else {
+      localStorage.setItem(DELETE_PENDING_KEY, DELETE_TOMBSTONE);
+    }
+    clearDeletedSnapshot();
+    if (isNative) {
+      await enqueueNative(() => DurableStore.remove({ key: DELETE_PENDING_KEY }));
+      assertCurrent();
+    }
+    localStorage.removeItem(DELETE_PENDING_KEY);
+    deleteRequestedRef.current = false;
+    setSavePhase("ready");
+  };
 
   useEffect(() => {
     const handleInstall = (event: Event) => { event.preventDefault(); setInstallEvent(event as Event & { prompt?: () => Promise<void> }); };
@@ -211,34 +284,169 @@ export default function Home() {
     return () => window.removeEventListener("beforeinstallprompt", handleInstall);
   }, []);
 
-  useEffect(() => { localStorage.setItem(SAVE_KEY, JSON.stringify({ completed, boards: savedBoards, activityDates })); }, [completed, savedBoards, activityDates]);
+  const hydrateNativeSave = async () => {
+    if (!isNative) return;
+    const generation = ++saveGenerationRef.current;
+    deleteRequestedRef.current = false;
+    setSaveError("");
+    setSavePhase("hydrating");
+    try {
+      const { value: deletePending } = await DurableStore.get({ key: DELETE_PENDING_KEY });
+      if (generation !== saveGenerationRef.current || savePhaseRef.current !== "hydrating") return;
+      if (deletePending) {
+        deleteRequestedRef.current = true;
+        setSavePhase("deleting");
+        await completeDeleteTransaction(generation, false);
+        return;
+      }
+
+      const { value: legacyCleanValue } = await DurableStore.get({ key: LEGACY_CLEAN_KEY });
+      const legacyClean = legacyCleanValue === LEGACY_CLEAN_VALUE;
+      if (generation !== saveGenerationRef.current || savePhaseRef.current !== "hydrating") return;
+      if (!legacyClean) {
+        const { value: legacyDeletePending } = await DurableStore.getLegacy({ key: DELETE_PENDING_KEY });
+        if (generation !== saveGenerationRef.current || savePhaseRef.current !== "hydrating") return;
+        if (legacyDeletePending) {
+          deleteRequestedRef.current = true;
+          setSavePhase("deleting");
+          await completeDeleteTransaction(generation, true);
+          return;
+        }
+      }
+
+      const { value } = await DurableStore.get({ key: SAVE_KEY });
+      if (generation !== saveGenerationRef.current || savePhaseRef.current !== "hydrating") return;
+      let snapshot: SaveSnapshot | undefined;
+      if (value) {
+        try { snapshot = normalizeSave(JSON.parse(value)); }
+        catch { /* fall through to an intact legacy or local snapshot */ }
+      }
+      if (!snapshot) {
+        if (!legacyClean) {
+          for (const legacyKey of [SAVE_KEY, ...LEGACY_SAVE_KEYS]) {
+            const { value: legacyValue } = await DurableStore.getLegacy({ key: legacyKey });
+            if (generation !== saveGenerationRef.current || savePhaseRef.current !== "hydrating") return;
+            if (!legacyValue) continue;
+            try { snapshot = normalizeSave(JSON.parse(legacyValue)); break; }
+            catch { /* try the next intact legacy generation */ }
+          }
+        }
+        snapshot ??= readLocalSave();
+        await enqueueNative(() => DurableStore.set({ key: SAVE_KEY, value: serializeSave(snapshot) }));
+      }
+      if (generation !== saveGenerationRef.current || savePhaseRef.current !== "hydrating") return;
+      if (!legacyClean) {
+        await enqueueNative(() => DurableStore.clearLegacy());
+        await enqueueNative(() => DurableStore.set({ key: LEGACY_CLEAN_KEY, value: LEGACY_CLEAN_VALUE }));
+        if (generation !== saveGenerationRef.current || savePhaseRef.current !== "hydrating") return;
+      }
+      commitSnapshot(snapshot);
+      setSavePhase("ready");
+    } catch {
+      if (generation !== saveGenerationRef.current) return;
+      if (deleteRequestedRef.current) {
+        setSaveError("清除尚未完成，旧记录不会显示，请点击重试。");
+        setSavePhase("delete-error");
+      } else {
+        setSaveError("进度恢复失败，未写入任何新数据。");
+        setSavePhase("read-error");
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!isNative) {
+      commitSnapshot(canonicalSaveRef.current);
+      return;
+    }
+    void hydrateNativeSave();
+    // The mount-only hydration owns its own generation guard.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const persistSaveNow = async (nextCompleted: string[], nextBoards: Record<string, string[]>, nextActivityDates: string[]) => {
+    if (savePhaseRef.current !== "ready") throw new Error("save store is not writable");
+    const generation = saveGenerationRef.current;
+    const snapshot: SaveSnapshot = { completed: nextCompleted, boards: nextBoards, activityDates: nextActivityDates };
+    if (isNative) await enqueueNative(() => DurableStore.set({ key: SAVE_KEY, value: serializeSave(snapshot) }));
+    if (generation !== saveGenerationRef.current || savePhaseRef.current !== "ready") throw new Error("stale save write");
+    commitSnapshot(snapshot);
+  };
 
   const openGame = (id: string) => {
+    if (savePhaseRef.current !== "ready") return;
     const next = PATTERNS.find(p => p.id === id) ?? PATTERNS[0];
     const nextTarget = next.rows.join("").split("");
     const saved = savedBoards[id];
     const safeBoard = saved?.length === nextTarget.length ? saved.map((value, index) => value === nextTarget[index] ? value : ".") : Array(nextTarget.length).fill(".");
+    boardRef.current = safeBoard;
     setActiveId(id); setBoard(safeBoard); setSelected(keys(next)[0]);
     setMistakes(0); setHint(true); setZone(0); setCelebrate(false); setTab("game"); window.scrollTo(0, 0);
   };
 
-  const paint = (index: number) => {
-    if (target[index] === "." || board[index] === target[index]) return;
+  const deleteAllSaveData = async () => {
+    if (savePhaseRef.current !== "ready") return;
+    if (!window.confirm("确定清除本机全部拼豆进度和作品吗？")) return;
+    const generation = ++saveGenerationRef.current;
+    deleteRequestedRef.current = true;
+    setShowPrivacy(false);
+    setTab("home");
+    setSaveError("");
+    setSavePhase("deleting");
+    try {
+      await completeDeleteTransaction(generation, true);
+    } catch {
+      if (generation !== saveGenerationRef.current) return;
+      setSaveError("清除尚未完成，旧记录不会显示，请点击重试。");
+      setSavePhase("delete-error");
+    }
+  };
+
+  const retrySaveOperation = async () => {
+    await hydrateNativeSave();
+  };
+
+  const paint = async (index: number) => {
+    if (savePhaseRef.current !== "ready") return;
+    if (target[index] === "." || boardRef.current[index] === target[index]) return;
     if (selected !== target[index]) {
       setMistakes(m => m + 1); setMessage(`这里需要${pattern.palette[target[index]].name}`);
       navigator.vibrate?.(30); window.setTimeout(() => setMessage(""), 900); return;
     }
-    setBoard(prev => { const next = [...prev]; next[index] = selected; setSavedBoards(all => ({...all,[pattern.id]:next})); const nextDone = next.filter((v,i)=>v !== "." && v === target[i]).length;
-      if (nextDone === total) { setCelebrate(true); setCompleted(c => c.includes(pattern.id) ? c : [...c, pattern.id]); setActivityDates(d => d.includes(localDay()) ? d : [...d,localDay()]); navigator.vibrate?.([40,40,80]); }
-      else if (activeZoneTargets.length && activeZoneTargets.every(zoneIndex => next[zoneIndex] === target[zoneIndex])) {
-        const nextZone = Array.from({ length: 9 }, (_, offset) => (zone + offset + 1) % 9).find(candidate => zoneIndices(candidate).some(zoneIndex => target[zoneIndex] !== "." && next[zoneIndex] !== target[zoneIndex]));
-        if (nextZone !== undefined) { setZone(nextZone); setMessage(`太棒了！接着拼${ZONE_LABELS[nextZone]}`); window.setTimeout(() => setMessage(""), 1200); }
-      }
-      return next;
-    });
+    const next = [...boardRef.current];
+    next[index] = selected;
+    boardRef.current = next;
+
+    const nextBoards = { ...savedBoardsRef.current, [pattern.id]: next };
+    let nextCompleted = completedRef.current;
+    let nextActivityDates = activityDatesRef.current;
+    const nextDone = next.filter((value, cellIndex) => value !== "." && value === target[cellIndex]).length;
+    if (nextDone === total) {
+      nextCompleted = nextCompleted.includes(pattern.id) ? nextCompleted : [...nextCompleted, pattern.id];
+      const today = localDay();
+      nextActivityDates = nextActivityDates.includes(today) ? nextActivityDates : [...nextActivityDates, today];
+    }
+    try {
+      await persistSaveNow(nextCompleted, nextBoards, nextActivityDates);
+    } catch {
+      boardRef.current = canonicalSaveRef.current.boards[pattern.id] ?? board;
+      setMessage("这颗豆子没有保存，请再点一次");
+      window.setTimeout(() => setMessage(""), 1600);
+      return;
+    }
+    setBoard(next);
+    setSavedBoards(nextBoards);
+    setCompleted(nextCompleted);
+    setActivityDates(nextActivityDates);
+    if (nextDone === total) {
+      setCelebrate(true); navigator.vibrate?.([40,40,80]);
+    } else if (activeZoneTargets.length && activeZoneTargets.every(zoneIndex => next[zoneIndex] === target[zoneIndex])) {
+      const nextZone = Array.from({ length: 9 }, (_, offset) => (zone + offset + 1) % 9).find(candidate => zoneIndices(candidate).some(zoneIndex => target[zoneIndex] !== "." && next[zoneIndex] !== target[zoneIndex]));
+      if (nextZone !== undefined) { setZone(nextZone); setMessage(`太棒了！接着拼${ZONE_LABELS[nextZone]}`); window.setTimeout(() => setMessage(""), 1200); }
+    }
   };
 
-  const handlePointer = (event: PointerEvent<HTMLButtonElement>, index: number) => { event.preventDefault(); paint(index); };
+  const handlePointer = (event: PointerEvent<HTMLButtonElement>, index: number) => { event.preventDefault(); void paint(index); };
   const currentColorDone = board.filter((v,i) => v === selected && v === target[i]).length;
   const currentColorTotal = target.filter(v => v === selected).length;
   const showPoster = (kind: "print" | "work") => {
@@ -249,7 +457,7 @@ export default function Home() {
     if (!poster) return;
     const link = document.createElement("a"); link.href = poster.src; link.download = poster.filename; link.click();
   };
-  const sharePoster = async () => {
+  const performPosterShare = async () => {
     if (!poster) return;
     setShareStatus("正在准备高清图…");
     try {
@@ -267,6 +475,27 @@ export default function Home() {
       } else { downloadPoster(); setShareStatus("高清图已下载"); }
     } catch { setShareStatus("没有保存，可以再试一次"); }
   };
+  const clearParentHold = () => {
+    if (parentHoldTimer.current !== null) window.clearTimeout(parentHoldTimer.current);
+    parentHoldTimer.current = null; setParentHold(null);
+  };
+  const startParentHold = (action: ParentAction) => {
+    clearParentHold(); setParentHold(action); setParentError("");
+    parentHoldTimer.current = window.setTimeout(() => {
+      setParentHold(null); parentHoldTimer.current = null;
+      setParentAnswer(""); setParentAction(action); setParentChallenge(makeParentChallenge());
+    }, 1400);
+  };
+  const verifyParent = async () => {
+    if (!parentChallenge) return;
+    if (Number(parentAnswer) !== parentChallenge.answer) {
+      setParentAnswer(""); setParentError("答案不对，请家长再算一题。"); setParentChallenge(makeParentChallenge(parentChallenge)); return;
+    }
+    const action = parentAction;
+    setParentChallenge(null); setParentAction(null); setParentAnswer(""); setParentError("");
+    if (action === "print") printPoster();
+    else if (action === "share") await performPosterShare();
+  };
   const printPoster = () => {
     if (!poster) return;
     const page = window.open("", "_blank"); if (!page) return;
@@ -276,9 +505,11 @@ export default function Home() {
 
   return <main>
     <div className="app app-shell" inert={overlayOpen ? true : undefined} aria-hidden={overlayOpen ? true : undefined}>
-      {tab !== "game" && <header className="app-header"><button className="logo" onClick={()=>setTab("home")}><span>米</span><div><b>米粒拼豆社</b><small>把小豆子拼成大冒险</small></div></button><button className="round" onClick={()=>setTab("works")} aria-label="打开作品册"><Star aria-hidden="true"/></button></header>}
+      {tab !== "game" && <header className="app-header"><button className="logo" disabled={savePhase !== "ready"} onClick={()=>setTab("home")}><span><img src="/brand-avatar-64.png" srcSet="/brand-avatar-128.png 2x" width="38" height="38" alt="" /></span><div><b>米粒拼豆社</b><small>把小豆子拼成大冒险</small></div></button><button className="round" disabled={savePhase !== "ready"} onClick={()=>setTab("works")} aria-label="打开作品册"><Star aria-hidden="true"/></button></header>}
 
-      {tab === "home" && <>
+      {savePhase !== "ready" && tab !== "game" && <section className="save-gate" role="status" aria-live="polite"><div><span><img src="/brand-avatar-64.png" width="48" height="48" alt="" /></span><h1>{savePhase === "hydrating" || savePhase === "deleting" ? "正在保护米粒的作品" : "进度暂时没有恢复"}</h1><p>{savePhase === "hydrating" ? "正在从本机存档恢复，请稍等。" : savePhase === "deleting" ? "正在清除本机记录，完成前不会显示旧作品。" : saveError}</p>{(savePhase === "read-error" || savePhase === "delete-error") && <button onClick={()=>void retrySaveOperation()}>{savePhase === "delete-error" ? "重试清除" : "重试恢复"}</button>}</div></section>}
+
+      {savePhase === "ready" && tab === "home" && <>
         <section className="home-hero"><div className="hero-copy"><span>今日动态任务</span><h1>火箭猫<br/>冲出云层</h1><p>拼好以后，让尾焰亮起来，带它飞向星星。</p><button onClick={()=>openGame("rocket-cat")}>开始挑战 <ArrowRight aria-hidden="true"/></button></div><div className="hero-art"><Art pattern={PATTERNS[0]} animated/><Sparkles aria-hidden="true"/><Star aria-hidden="true"/></div></section>
         <section className="quick-status"><div><span>{streak ? <Flame aria-hidden="true"/> : <Sparkles aria-hidden="true"/>}</span><p><b>{streak ? `连续创作 ${streak} 天` : "今天来点亮第一颗星"}</b><small>{completed.length ? `已收藏 ${completed.length} 个作品` : "完成一张图纸，记录会留在手机里"}</small></p></div><em>{milestone}/4</em></section>
         <section className="section-title"><div><small>米粒精选</small><h2>一眼就想拼的图纸</h2></div><button onClick={()=>setTab("library")}>查看全部</button></section>
@@ -288,9 +519,9 @@ export default function Home() {
         <button className="parent-link" onClick={()=>setShowPrivacy(true)}>家长与隐私说明</button>
       </>}
 
-      {tab === "library" && <section className="library"><div className="page-head"><small>图纸宝库</small><h1>今天拼哪个？</h1><p>所有图形都完整展示，点开就能直接玩。</p></div><div className="filters">{categories.map(c=><button key={c} className={filter===c?"active":""} onClick={()=>setFilter(c)}>{c}</button>)}</div><div className="library-list">{PATTERNS.filter(p=>filter==="全部"||p.category===filter).map(p=><Card key={p.id} pattern={p} onOpen={()=>openGame(p.id)} finished={completed.includes(p.id)} />)}</div></section>}
+      {savePhase === "ready" && tab === "library" && <section className="library"><div className="page-head"><small>图纸宝库</small><h1>今天拼哪个？</h1><p>所有图形都完整展示，点开就能直接玩。</p></div><div className="filters">{categories.map(c=><button key={c} className={filter===c?"active":""} onClick={()=>setFilter(c)}>{c}</button>)}</div><div className="library-list">{PATTERNS.filter(p=>filter==="全部"||p.category===filter).map(p=><Card key={p.id} pattern={p} onOpen={()=>openGame(p.id)} finished={completed.includes(p.id)} />)}</div></section>}
 
-      {tab === "game" && <section className="game-screen">
+      {savePhase === "ready" && tab === "game" && <section className="game-screen">
         <header className="game-header"><button onClick={()=>setTab("library")} aria-label="返回图纸宝库"><ArrowLeft aria-hidden="true"/></button><div><b>{pattern.name}</b><small>{done}/{total} 颗 · 错误 {mistakes}</small></div><button onClick={()=>setHint(v=>!v)}>{hint?"关提示":"开提示"}</button></header>
         <div className="game-progress" role="progressbar" aria-label="拼豆完成度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><i style={{width:`${progress}%`}} /><b>{progress}%</b></div>
         <div className="reference"><div><span>完整图纸</span><aside><button onClick={()=>showPoster("print")}>生成打印图</button><button onClick={()=>gameRef.current?.scrollIntoView({behavior:"smooth"})}>开始拼 <ArrowDown aria-hidden="true"/></button></aside></div><Art pattern={pattern} /></div>
@@ -300,14 +531,15 @@ export default function Home() {
         <div className="palette"><div className="palette-head"><b>选择豆子颜色</b><button onClick={()=>setConfirmReset(true)}><RotateCcw aria-hidden="true"/>重新开始</button></div><div>{keys(pattern).map(k=>{const count=target.filter(v=>v===k).length;const placed=board.filter((v,i)=>v===k&&v===target[i]).length;return <button key={k} className={selected===k?"active":""} onClick={()=>setSelected(k)}><i style={{background:pattern.palette[k].color}}/><span>{pattern.palette[k].name}<small>{placed}/{count}</small></span>{placed===count&&<em><Check aria-hidden="true"/></em>}</button>})}</div></div>
       </section>}
 
-      {tab === "works" && <section className="works"><div className="page-head"><small>米粒的作品册</small><h1>{completed.length} 个闪亮作品</h1><p>每完成一幅，都会保存在这台手机里，家长可以随时清除。</p></div>{completed.length?<div className="work-grid">{PATTERNS.filter(p=>completed.includes(p.id)).map(p=><article key={p.id}><button onClick={()=>openGame(p.id)}><Art pattern={p}/><b>{p.name}</b><small>点击再玩</small></button><button className="work-play" onClick={()=>setAnimationId(p.id)}><Play aria-hidden="true"/>播放动画</button></article>)}</div>:<div className="no-works"><span><Sparkles aria-hidden="true"/></span><h2>第一颗星星还在等你</h2><p>完成一张图纸，它就会出现在这里。</p><button onClick={()=>openGame("rocket-cat")}>去完成第一幅</button></div>}</section>}
+      {savePhase === "ready" && tab === "works" && <section className="works"><div className="page-head"><small>米粒的作品册</small><h1>{completed.length} 个闪亮作品</h1><p>每完成一幅，都会保存在这台手机里，家长可以随时清除。</p></div>{completed.length?<div className="work-grid">{PATTERNS.filter(p=>completed.includes(p.id)).map(p=><article key={p.id}><button onClick={()=>openGame(p.id)}><Art pattern={p}/><b>{p.name}</b><small>点击再玩</small></button><button className="work-play" onClick={()=>setAnimationId(p.id)}><Play aria-hidden="true"/>播放动画</button></article>)}</div>:<div className="no-works"><span><Sparkles aria-hidden="true"/></span><h2>第一颗星星还在等你</h2><p>完成一张图纸，它就会出现在这里。</p><button onClick={()=>openGame("rocket-cat")}>去完成第一幅</button></div>}</section>}
 
-      {tab !== "game" && <nav className="nav"><button className={tab==="home"?"active":""} onClick={()=>setTab("home")}><span><HomeIcon aria-hidden="true"/></span>首页</button><button className={tab==="library"?"active":""} onClick={()=>setTab("library")}><span><BookOpen aria-hidden="true"/></span>图纸</button><button className="play" onClick={()=>openGame(PATTERNS.find(p=>!completed.includes(p.id))?.id??PATTERNS[0].id)}><span><Play aria-hidden="true"/></span>开拼</button><button className={tab==="works"?"active":""} onClick={()=>setTab("works")}><span><Star aria-hidden="true"/></span>作品</button></nav>}
+      {savePhase === "ready" && tab !== "game" && <nav className="nav"><button className={tab==="home"?"active":""} onClick={()=>setTab("home")}><span><HomeIcon aria-hidden="true"/></span>首页</button><button className={tab==="library"?"active":""} onClick={()=>setTab("library")}><span><BookOpen aria-hidden="true"/></span>图纸</button><button className="play" onClick={()=>openGame(PATTERNS.find(p=>!completed.includes(p.id))?.id??PATTERNS[0].id)}><span><Play aria-hidden="true"/></span>开拼</button><button className={tab==="works"?"active":""} onClick={()=>setTab("works")}><span><Star aria-hidden="true"/></span>作品</button></nav>}
     </div>
     {celebrate&&<DialogFrame className="finish-sheet" label="拼豆完成" onClose={()=>setCelebrate(false)}><div className="sparkles">{Array.from({length:10},(_,i)=><i key={i}>✦</i>)}</div><div className="confetti">✦ · ● · ✦</div><div className="motion-stage mini"><Art pattern={pattern} animated/></div><h2>完成啦，米粒！</h2><p>{pattern.animation}</p><div><button onClick={()=>{setCelebrate(false);setAnimationId(pattern.id)}}>播放动画</button><button onClick={()=>{setCelebrate(false);showPoster("work")}}>生成作品卡</button><button onClick={()=>{setCelebrate(false);setTab("works")}}>放进作品册</button><button onClick={()=>setCelebrate(false)}>再看看</button></div></DialogFrame>}
-    {poster && <DialogFrame className="poster-sheet" label={poster.kind === "print" ? "高清可打印图纸" : "米粒的作品卡"} onClose={()=>setPoster(null)}><section><button className="poster-close" onClick={()=>setPoster(null)} aria-label="关闭"><X aria-hidden="true"/></button><small>{poster.kind === "print" ? "高清可打印图纸" : "米粒的作品卡"}</small><img src={poster.src} alt={`${pattern.name}拼豆${poster.kind === "print" ? "图纸" : "作品卡"}`} /><div className={Capacitor.isNativePlatform()?"single-action":undefined}><button onClick={sharePoster}>{Capacitor.isNativePlatform()?"保存或分享":"保存高清图"}</button>{!Capacitor.isNativePlatform()&&<button onClick={printPoster}>打印</button>}</div><p role="status" aria-live="polite">{shareStatus || "高清 PNG · 1200×1500"}</p></section></DialogFrame>}
+    {poster && <DialogFrame className="poster-sheet" label={poster.kind === "print" ? "高清可打印图纸" : "米粒的作品卡"} inactive={Boolean(parentChallenge)} onClose={()=>{clearParentHold();setPoster(null)}}><section><button className="poster-close" onClick={()=>{clearParentHold();setPoster(null)}} aria-label="关闭"><X aria-hidden="true"/></button><small>{poster.kind === "print" ? "高清可打印图纸" : "米粒的作品卡"}</small><img src={poster.src} alt={`${pattern.name}拼豆${poster.kind === "print" ? "图纸" : "作品卡"}`} /><div className={Capacitor.isNativePlatform()?"single-action":undefined}><button className={parentHold==="share"?"parent-hold active":"parent-hold"} aria-describedby="parent-action-help" onPointerDown={()=>startParentHold("share")} onPointerUp={clearParentHold} onPointerCancel={clearParentHold} onPointerLeave={clearParentHold} onKeyDown={event=>{if((event.key===" "||event.key==="Enter")&&!event.repeat)startParentHold("share")}} onKeyUp={event=>{if(event.key===" "||event.key==="Enter")clearParentHold()}}>{Capacitor.isNativePlatform()?"家长长按·保存或分享":"家长长按·保存高清图"}</button>{!Capacitor.isNativePlatform()&&<button className={parentHold==="print"?"parent-hold active":"parent-hold"} aria-describedby="parent-action-help" onPointerDown={()=>startParentHold("print")} onPointerUp={clearParentHold} onPointerCancel={clearParentHold} onPointerLeave={clearParentHold} onKeyDown={event=>{if((event.key===" "||event.key==="Enter")&&!event.repeat)startParentHold("print")}} onKeyUp={event=>{if(event.key===" "||event.key==="Enter")clearParentHold()}}>家长长按·打印</button>}</div><p id="parent-action-help" role="status" aria-live="polite">{parentHold?"请继续按住…":shareStatus || "高清 PNG · 1200×1500 · 保存/分享/打印需家长操作"}</p></section></DialogFrame>}
     {animationPattern && <DialogFrame className="animation-sheet" label={`${animationPattern.name}动画`} onClose={()=>setAnimationId(null)}><section><button className="animation-close" onClick={()=>setAnimationId(null)} aria-label="关闭动画"><X aria-hidden="true"/></button><small>作品动起来了</small><h2>{animationPattern.name}</h2><div className={`motion-stage scene-${animationPattern.motion}`}><div className="motion-trail" aria-hidden="true">✦ · ✦</div><Art pattern={animationPattern} bead animated/></div><ul className="motion-story"><li><b>角色</b>{animationPattern.motionPlan.body}</li><li><b>道具</b>{animationPattern.motionPlan.prop}</li><li><b>特效</b>{animationPattern.motionPlan.fx}</li></ul><button className="replay" onClick={()=>{setAnimationId(null);requestAnimationFrame(()=>setAnimationId(animationPattern.id))}}>再播放一次</button></section></DialogFrame>}
-    {showPrivacy && <DialogFrame className="privacy-sheet" label="家长与隐私" onClose={()=>setShowPrivacy(false)}><PrivacyContent onBack={()=>setShowPrivacy(false)} onDelete={()=>{if(window.confirm("确定清除本机全部拼豆进度和作品吗？")){localStorage.removeItem(SAVE_KEY);LEGACY_SAVE_KEYS.forEach(key=>localStorage.removeItem(key));setCompleted([]);setSavedBoards({});setActivityDates([]);setShowPrivacy(false);setTab("home")}}}/></DialogFrame>}
-    {confirmReset && <DialogFrame className="confirm-sheet" label="确认重新开始" onClose={()=>setConfirmReset(false)}><section><h2>要重新开始吗？</h2><p>已经拼好的 {done} 颗豆子会被清空，这一步不能撤销。</p><div><button onClick={()=>setConfirmReset(false)}>继续拼</button><button className="danger" onClick={()=>{const empty=Array(target.length).fill(".");setBoard(empty);setSavedBoards(all=>({...all,[pattern.id]:empty}));setConfirmReset(false)}}>确认清空</button></div></section></DialogFrame>}
+    {showPrivacy && <DialogFrame className="privacy-sheet" label="家长与隐私" onClose={()=>setShowPrivacy(false)}><PrivacyContent onBack={()=>setShowPrivacy(false)} onDelete={deleteAllSaveData}/></DialogFrame>}
+    {confirmReset && <DialogFrame className="confirm-sheet" label="确认重新开始" onClose={()=>setConfirmReset(false)}><section><h2>要重新开始吗？</h2><p>已经拼好的 {done} 颗豆子会被清空，这一步不能撤销。</p><div><button onClick={()=>setConfirmReset(false)}>继续拼</button><button className="danger" onClick={async()=>{const empty=Array(target.length).fill(".");const nextBoards={...savedBoardsRef.current,[pattern.id]:empty};try{await persistSaveNow(completedRef.current,nextBoards,activityDatesRef.current);boardRef.current=empty;setBoard(empty);setSavedBoards(nextBoards);setConfirmReset(false)}catch{setMessage("清空失败，进度仍保留")}}}>确认清空</button></div></section></DialogFrame>}
+    {parentChallenge && <DialogFrame className="parent-gate" label="家长验证" onClose={()=>{setParentChallenge(null);setParentAction(null);setParentAnswer("");setParentError("")}}><form onSubmit={event=>{event.preventDefault();void verifyParent()}}><small>家长操作</small><h2>请交给家长</h2><p>{parentAction==="print"?"打印会打开新窗口。":"保存或分享会打开系统面板。"}这是成人区，请家长计算：</p><strong aria-label={`${parentChallenge.left}${parentChallenge.operator}${parentChallenge.right}等于多少`}>{parentChallenge.left} {parentChallenge.operator} {parentChallenge.right} = ?</strong><label htmlFor="parent-answer">答案</label><input id="parent-answer" name="parent-answer" inputMode="numeric" pattern="[0-9]*" autoComplete="off" value={parentAnswer} onChange={event=>setParentAnswer(event.target.value.replace(/\D/g,"").slice(0,5))} aria-describedby={parentError?"parent-error":undefined}/>{parentError&&<p id="parent-error" className="gate-error" role="alert">{parentError}</p>}<div><button type="button" onClick={()=>{setParentChallenge(null);setParentAction(null);setParentAnswer("");setParentError("")}}>取消</button><button type="submit" disabled={!parentAnswer}>验证并继续</button></div></form></DialogFrame>}
   </main>;
 }

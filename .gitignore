@@ -26,6 +26,10 @@ __pycache__/
 # misc
 .DS_Store
 *.pem
+*.jks
+*.keystore
+*.p12
+*.pfx
 
 # debug
 npm-debug.log*
@@ -45,6 +49,10 @@ yarn-error.log*
 /work/
 /android/**/build/
 /release/artifacts/
+/release/native-verification-v11/**
+!/release/native-verification-v11/final-durable-store/
+/release/native-verification-v11/final-durable-store/*
+!/release/native-verification-v11/final-durable-store/VERDICT.md
 /release/native-verification-v10/
 /release/native-verification-brand-final/
 /android/release/

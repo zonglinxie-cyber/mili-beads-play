@@ -1,8 +1,42 @@
 apply plugin: 'com.android.application'
 
+def releaseSigningEnvironment = [
+    storeFile: 'MILI_ANDROID_KEYSTORE',
+    storePassword: 'MILI_ANDROID_KEYSTORE_PASSWORD',
+    keyAlias: 'MILI_ANDROID_KEY_ALIAS',
+    keyPassword: 'MILI_ANDROID_KEY_PASSWORD',
+]
+def releaseSigningValues = releaseSigningEnvironment.collectEntries { propertyName, environmentName ->
+    def rawValue = System.getenv(environmentName)
+    [(propertyName): rawValue != null && !rawValue.isEmpty() ? rawValue : null]
+}
+def configuredReleaseSigningVariables = releaseSigningEnvironment.findAll { propertyName, environmentName ->
+    releaseSigningValues[propertyName]
+}.values().toList()
+
+if (configuredReleaseSigningVariables && configuredReleaseSigningVariables.size() != releaseSigningEnvironment.size()) {
+    def missing = releaseSigningEnvironment.findAll { propertyName, environmentName ->
+        !releaseSigningValues[propertyName]
+    }.values().join(', ')
+    throw new GradleException("Android release signing is only partially configured. Set all four environment variables or unset all four. Missing: ${missing}")
+}
+
+def releaseSigningEnabled = configuredReleaseSigningVariables.size() == releaseSigningEnvironment.size()
+def releaseKeystore = releaseSigningEnabled ? new File(releaseSigningValues.storeFile).canonicalFile : null
+def repositoryRoot = rootProject.projectDir.parentFile.canonicalFile
+if (releaseSigningEnabled && (!new File(releaseSigningValues.storeFile).isAbsolute() || releaseKeystore.toPath().startsWith(repositoryRoot.toPath()))) {
+    throw new GradleException('MILI_ANDROID_KEYSTORE must be an absolute path outside the repository.')
+}
+if (releaseSigningEnabled && !releaseKeystore.isFile()) {
+    throw new GradleException("MILI_ANDROID_KEYSTORE must point to an existing keystore file: ${releaseKeystore}")
+}
+
 android {
     namespace = "family.mili.beads"
     compileSdk = rootProject.ext.compileSdkVersion
+    buildFeatures {
+        buildConfig = true
+    }
     defaultConfig {
         applicationId "family.mili.beads"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -16,11 +50,53 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (releaseSigningEnabled) {
+            release {
+                storeFile releaseKeystore
+                storePassword releaseSigningValues.storePassword
+                keyAlias releaseSigningValues.keyAlias
+                keyPassword releaseSigningValues.keyPassword
+            }
+        }
+    }
     buildTypes {
         release {
+            if (releaseSigningEnabled) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+}
+
+tasks.register('releaseSigningStatus') {
+    group = 'verification'
+    description = 'Reports whether the release bundle will use the environment-provided upload key.'
+    doLast {
+        if (releaseSigningEnabled) {
+            logger.lifecycle('Android release signing: ENABLED (upload key from MILI_ANDROID_* environment variables).')
+        } else {
+            logger.lifecycle('Android release signing: DISABLED. bundleRelease will produce an unsigned local candidate; it is not upload-ready.')
+        }
+    }
+}
+
+tasks.register('bundleUnsignedReleaseCandidate', Copy) {
+    group = 'build'
+    description = 'Builds and copies the unsigned release bundle to an explicitly labeled local-candidate filename.'
+    dependsOn 'bundleRelease'
+    from layout.buildDirectory.file('outputs/bundle/release/app-release.aab')
+    into layout.buildDirectory.dir('outputs/unsigned-release-candidate')
+    rename { 'mili-beads-android-release-unsigned.aab' }
+    doFirst {
+        if (releaseSigningEnabled) {
+            throw new GradleException('bundleUnsignedReleaseCandidate is only for the zero-variable unsigned fallback. Use bundleRelease for an upload-key-signed bundle.')
+        }
+    }
+    doLast {
+        logger.lifecycle("Unsigned Android release candidate: ${layout.buildDirectory.file('outputs/unsigned-release-candidate/mili-beads-android-release-unsigned.aab').get().asFile}")
     }
 }
 

@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     "android/**/build/**",
     "ios/App/App/public/**",
     "android/app/src/main/assets/public/**",
+    "release/e2e-report/**",
+    "release/test-results/**",
     "next-env.d.ts",
   ]),
   eslint.configs.recommended,

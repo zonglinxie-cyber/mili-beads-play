@@ -8,7 +8,7 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const rootUrl = new URL("../", import.meta.url);
-const expectedSourceHash = "9115a018a9f279c5559e02b6cdfe7fb0685527fcf9d3816535179c53c2a0cfde";
+const expectedSourceHash = "441af858f1bbf8391bbfb27d99aa60813a584ce07eecc0124b9d3c78796b5aa3";
 const knownTemplateHashes = new Set([
   "1b5002b74a5500e697298ced06ca2811ac33f2771f236f3c720ff23243890530", // iOS Capacitor splash
   "5cf98b4451bd99b20df26f9e608a46946118be6b0ae90762f9ca1786a30c76ff", // Android Capacitor splash
@@ -36,7 +36,7 @@ test("native assets are deterministic derivatives of the approved brand icon", a
     ["scripts/generate-native-brand-assets.mjs", "--check"],
     { cwd: fileURLToPath(rootUrl) },
   );
-  assert.match(stdout, /^verified 30 native brand assets/m);
+  assert.match(stdout, /^verified 40 web\/native brand assets/m);
 
   for (const path of representativeNativeAssets) {
     const asset = await readFile(new URL(path, import.meta.url));

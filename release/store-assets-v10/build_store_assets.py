@@ -4,7 +4,6 @@
 from pathlib import Path
 import json
 import hashlib
-from collections import deque
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 
@@ -53,11 +52,11 @@ def build_feature_graphic() -> Path:
     canvas = Image.new("RGB", (1024, 500), CREAM)
     draw = ImageDraw.Draw(canvas)
 
-    # Calm, center-safe background; important content remains away from the crop edges.
-    draw.ellipse((-160, -190, 360, 250), fill="#f8b69e")
-    draw.ellipse((790, -210, 1190, 190), fill="#cab8e5")
-    draw.ellipse((-190, 355, 380, 690), fill="#d6c6e8")
-    draw.ellipse((720, 330, 1150, 700), fill="#745e9b")
+    # Calm, center-safe brand field; all important content stays clear of crop edges.
+    draw.ellipse((-170, -205, 350, 245), fill="#f8b69e")
+    draw.ellipse((780, -225, 1210, 205), fill="#cab8e5")
+    draw.ellipse((-210, 360, 390, 720), fill="#d6c6e8")
+    draw.ellipse((690, 315, 1190, 735), fill="#745e9b")
 
     for x, y, color in [(95, 215, CORAL), (185, 110, YELLOW), (360, 60, PINK),
                         (595, 76, BLUE), (898, 205, YELLOW), (930, 314, PINK),
@@ -66,11 +65,11 @@ def build_feature_graphic() -> Path:
     draw_star(draw, 379, 392, 17)
     draw_star(draw, 868, 84, 20)
 
-    # Phone-shaped play board using the shipped rocket-cat pattern.
-    board = Image.new("RGBA", (358, 420), (0, 0, 0, 0))
+    # Phone-shaped play board using the shipped, reproducible rocket-cat pattern.
+    board = Image.new("RGBA", (300, 360), (0, 0, 0, 0))
     bd = ImageDraw.Draw(board)
-    round_rect(bd, (8, 8, 350, 410), 44, "#fffdf8", "#eadfce", 3)
-    round_rect(bd, (24, 26, 334, 385), 28, "#f1e6d8")
+    round_rect(bd, (8, 8, 292, 350), 38, "#fffdf8", "#eadfce", 3)
+    round_rect(bd, (23, 24, 277, 330), 25, "#f1e6d8")
 
     # Exact checked-in rocket-cat bead grid, rendered deterministically.
     rows = [
@@ -82,19 +81,32 @@ def build_feature_graphic() -> Path:
         "..RYRRR...........", "...RYR............", "....RR............",
     ]
     colors = {"K": INK, "W": "#fff5df", "O": CORAL, "Y": YELLOW, "R": "#cf4e61", "N": NAVY}
-    grid_left, grid_top, cell = 37, 52, 15
+    grid_left, grid_top, cell = 29, 37, 13
     for yy, row in enumerate(rows):
         for xx, value in enumerate(row):
             if value != ".":
-                draw_bead(bd, grid_left + xx*cell + cell/2, grid_top + yy*cell + cell/2, 6.7, colors[value])
-    board = board.rotate(-4, resample=Image.Resampling.BICUBIC, expand=True)
+                draw_bead(bd, grid_left + xx*cell + cell/2, grid_top + yy*cell + cell/2, 5.7, colors[value])
+    board = board.rotate(-5, resample=Image.Resampling.BICUBIC, expand=True)
     shadow = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
     alpha = board.getchannel("A").filter(ImageFilter.GaussianBlur(14))
     shadow_blob = Image.new("RGBA", board.size, (58, 42, 74, 78))
     shadow_blob.putalpha(alpha)
-    shadow.alpha_composite(shadow_blob, (646, 72))
+    shadow.alpha_composite(shadow_blob, (602, 92))
     canvas = Image.alpha_composite(canvas.convert("RGBA"), shadow)
-    canvas.alpha_composite(board, (628, 45))
+    canvas.alpha_composite(board, (585, 72))
+
+    # The selected v4 cat is the recognizable brand anchor; the grid card behind it
+    # remains the honest gameplay cue. This crop is a deterministic derivative of the
+    # reviewed 1024 source, not a separate marketing illustration.
+    mascot = Image.open(ROOT / "public/app-icon-1024.png").convert("RGBA").resize((272, 272), Image.Resampling.LANCZOS)
+    mascot_mask = Image.new("L", mascot.size, 0)
+    ImageDraw.Draw(mascot_mask).rounded_rectangle((0, 0, 271, 271), 58, fill=255)
+    mascot.putalpha(mascot_mask)
+    mascot = mascot.rotate(4, resample=Image.Resampling.BICUBIC, expand=True)
+    mascot_shadow = Image.new("RGBA", mascot.size, (53, 38, 74, 80))
+    mascot_shadow.putalpha(mascot.getchannel("A").filter(ImageFilter.GaussianBlur(12)))
+    canvas.alpha_composite(mascot_shadow, (762, 127))
+    canvas.alpha_composite(mascot, (748, 111))
 
     draw = ImageDraw.Draw(canvas)
     draw.text((92, 124), "把小豆子", font=font(62, True), fill=INK)
@@ -134,53 +146,7 @@ def copy_rgb(source: Path, destination: Path):
 def copy_rgba_opaque(source: Path, destination: Path):
     """Encode 32-bit RGBA while keeping the full-bleed artwork visually opaque."""
     img = Image.open(source).convert("RGBA")
-    width, height = img.size
-    pixels = img.load()
-
-    # The checked-in artwork has an already-baked rounded black surround. Flood only
-    # background-like (dark or purple) pixels connected to the canvas edge. Interior
-    # dark beads/eyes remain protected because the orange/cream subject encloses them.
-    seen = set()
-    queue = deque()
-    for x in range(width):
-        queue.extend(((x, 0), (x, height - 1)))
-    for y in range(height):
-        queue.extend(((0, y), (width - 1, y)))
-    while queue:
-        x, y = queue.popleft()
-        if (x, y) in seen:
-            continue
-        r, g, b, _ = pixels[x, y]
-        dark = max(r, g, b) < 78
-        purple_like = b > r * 1.25 and b > g * 1.55 and r > g * 1.08
-        if not (dark or purple_like):
-            continue
-        seen.add((x, y))
-        if x: queue.append((x - 1, y))
-        if x + 1 < width: queue.append((x + 1, y))
-        if y: queue.append((x, y - 1))
-        if y + 1 < height: queue.append((x, y + 1))
-
-    # Invert the flooded background so only the actual cat/helmet/star artwork from
-    # the source is composited over a clean, full-square purple field.
-    mask = Image.new("L", img.size, 255)
-    mask_pixels = mask.load()
-    for x, y in seen:
-        mask_pixels[x, y] = 0
-    mask = mask.filter(ImageFilter.GaussianBlur(0.8))
-
-    background = Image.new("RGBA", img.size)
-    bg = background.load()
-    for y in range(height):
-        for x in range(width):
-            t = (0.55 * x / (width - 1) + 0.45 * y / (height - 1))
-            bg[x, y] = (
-                round(151 + (91 - 151) * t),
-                round(108 + (61 - 108) * t),
-                round(226 + (166 - 226) * t),
-                255,
-            )
-    img = Image.composite(img, background, mask)
+    img.putalpha(Image.new("L", img.size, 255))
     img.save(destination, format="PNG", optimize=True)
 
 
@@ -208,7 +174,7 @@ def image_info(path: Path):
 def build_contact_sheet(paths: list[Path]) -> Path:
     sheet = Image.new("RGB", (1800, 1840), "#eee6da")
     draw = ImageDraw.Draw(sheet)
-    draw.text((48, 28), "米粒拼豆社 · 最终商店素材 v10", font=font(36, True), fill=INK)
+    draw.text((48, 28), "米粒拼豆社 · 上架素材 v10 · 品牌 v2", font=font(36, True), fill=INK)
 
     feature = Image.open(paths[0]).convert("RGB")
     feature.thumbnail((620, 303), Image.Resampling.LANCZOS)
@@ -275,8 +241,8 @@ def main():
     manifest = {
         "generatedAt": "2026-08-12",
         "provenance": {
-            "featureGraphic": "Deterministic composition using current app palette and checked-in rocket-cat grid; no new AI asset.",
-            "icon": "Opaque RGBA 32-bit derivative of public/app-icon-512.png. Baked black rounded-corner surround was mechanically replaced with a full-square purple background for Play dynamic masking.",
+            "featureGraphic": "Deterministic composition using the reviewed v4 cat brand source, current app palette, and checked-in rocket-cat grid.",
+            "icon": "Opaque RGBA 32-bit derivative of the reviewed v4 public/app-icon-512.png, with a full-square purple background for Play dynamic masking.",
             "screenshots": "Captured from the final production Web build after driving the real 170-bead E2E completion path. Play captures use a 540x1080 viewport at 2x. App Store captures use a 440x956 viewport at 3x and are explicitly labeled web composites, not device screenshots.",
             "codeHashes": {
                 relative: hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()

@@ -58,8 +58,24 @@ test("a child can complete a pattern, animate it, export it, and recover the wor
   await expect(poster).toBeVisible();
   const imageSize = await poster.locator("img").evaluate((image: HTMLImageElement) => ({ width: image.naturalWidth, height: image.naturalHeight }));
   expect(imageSize).toEqual({ width: 1200, height: 1500 });
+  const parentButton = poster.getByRole("button", { name: "家长长按·保存高清图" });
+  await parentButton.dispatchEvent("pointerdown");
+  await page.waitForTimeout(1500);
+  const parentGate = page.getByRole("dialog", { name: "家长验证" });
+  await expect(parentGate).toBeVisible();
+  await expect(parentGate.locator("input")).toBeFocused();
+  const firstProblem = await parentGate.locator("strong").innerText();
+  await parentGate.locator("input").fill("999");
+  await parentGate.getByRole("button", { name: "验证并继续" }).click();
+  await expect(parentGate.getByRole("alert")).toContainText("答案不对");
+  await expect(parentGate.locator("strong")).not.toHaveText(firstProblem);
+  const problem = await parentGate.locator("strong").innerText();
+  const match = problem.match(/(\d+)\s*×\s*(\d+)/);
+  expect(match).not.toBeNull();
+  const answer = Number(match?.[1]) * Number(match?.[2]);
   const downloadPromise = page.waitForEvent("download");
-  await poster.getByRole("button", { name: "保存高清图" }).click();
+  await parentGate.locator("input").fill(String(answer));
+  await parentGate.getByRole("button", { name: "验证并继续" }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toContain(pattern.name);
   await page.keyboard.press("Escape");
@@ -87,6 +103,8 @@ test("partial bead progress survives a cold page reload", async ({ page }) => {
   await page.getByRole("button", { name: /^墨黑 / }).click();
   await page.getByRole("button", { name: /，墨黑$/ }).first().click();
   await expect(page.locator(".game-screen")).toContainText("1/170 颗");
+  const persistedBeforeReload = await page.evaluate(() => JSON.parse(localStorage.getItem("mili-game-v3") ?? "{}").boards?.["rocket-cat"]);
+  expect(persistedBeforeReload?.filter((cell: string) => cell !== ".")).toHaveLength(1);
   await page.waitForTimeout(300);
   await page.reload();
   await page.getByRole("button", { name: /开始挑战/ }).click();
@@ -139,4 +157,45 @@ test("reset, privacy and reduced motion are safe", async ({ page }) => {
   await expect(privacy.getByText("保留与删除")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(privacy).toBeHidden();
+});
+
+test("clearing local records survives a reload", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => {
+    localStorage.setItem("mili-game-v3", JSON.stringify({ completed: ["bottle-jelly"], boards: {}, activityDates: ["2026-08-12"] }));
+    localStorage.setItem("mili-game-v2", JSON.stringify({ completed: ["rocket-cat"], boards: {}, activityDates: [] }));
+  });
+  await page.reload();
+  await expect(page.getByText("已收藏 1 个作品")).toBeVisible();
+  await page.getByRole("button", { name: "家长与隐私说明" }).click();
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByRole("button", { name: "清除本机游戏记录" }).click();
+  await expect(page.getByText("今天来点亮第一颗星")).toBeVisible();
+  await expect.poll(() => page.evaluate(() => [localStorage.getItem("mili-game-v3"), localStorage.getItem("mili-game-v2"), localStorage.getItem("mili-game-delete-pending-v1")])).toEqual([null, null, null]);
+  await page.reload();
+  await expect(page.getByText("今天来点亮第一颗星")).toBeVisible();
+});
+
+test("the parental gate cannot be bypassed by a short hold or stale answer", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /开始挑战/ }).click();
+  await page.getByRole("button", { name: "生成打印图" }).click();
+  const poster = page.getByRole("dialog", { name: "高清可打印图纸" });
+  const posterLayer = page.locator(".poster-sheet");
+  const parentButton = poster.getByRole("button", { name: "家长长按·保存高清图" });
+
+  await parentButton.dispatchEvent("pointerdown");
+  await page.waitForTimeout(250);
+  await parentButton.dispatchEvent("pointerup");
+  await page.waitForTimeout(1500);
+  await expect(page.getByRole("dialog", { name: "家长验证" })).toBeHidden();
+
+  await parentButton.dispatchEvent("pointerdown");
+  await page.waitForTimeout(1500);
+  const gate = page.getByRole("dialog", { name: "家长验证" });
+  await expect(gate).toBeVisible();
+  await expect(posterLayer).toHaveAttribute("aria-hidden", "true");
+  await page.keyboard.press("Escape");
+  await expect(gate).toBeHidden();
+  await expect(poster).toBeVisible();
 });

@@ -1,5 +1,5 @@
-const CACHE = "mili-beads-v4";
-const CORE = ["/", "/privacy", "/manifest.webmanifest", "/favicon.svg", "/app-icon-192.png", "/app-icon-512.png"];
+const CACHE = "mili-beads-v5";
+const CORE = ["/", "/privacy", "/support", "/manifest.webmanifest", "/favicon.svg", "/app-icon-192.png", "/app-icon-512.png", "/brand-avatar-64.png", "/brand-avatar-128.png"];
 self.addEventListener("install", event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting())));
 self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
 self.addEventListener("fetch", event => {

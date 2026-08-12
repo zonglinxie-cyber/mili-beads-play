@@ -279,7 +279,7 @@ rg -o 'text="1/170 颗 · 错误 0"|text="1/2 颗"|text="墨黑 1/37"' \
 
 通过条件：重启前后均必须同时得到三行：`1/170`、`1/2`、`墨黑 1/37`。不要在 WebView 尚未生成可访问性树时使用固定坐标；否则会产生之前的假阴性。
 
-## 10. 应用模块 Instrumentation 2/2
+## 10. 应用模块 Instrumentation 3/3
 
 只运行 `:app` 模块；不要调用聚合 `connectedDebugAndroidTest`，后者会误跑 Capacitor 库的空测试包并触发第三方 Kotlin 重复类问题。
 
@@ -310,4 +310,4 @@ rg -n 'testsuite|testcase' "$VERIFY_OUT/10-app-instrumentation-results.xml" \
 git status --short | tee "$VERIFY_OUT/11-git-status-after-verification.txt"
 ```
 
-最终结论必须列出：最终源码/品牌资源/APK/AAB SHA-256、Launcher 截图、Splash 帧、离线冷启、内置隐私、PNG 尺寸与 Sharesheet、进度恢复三项计数、Instrumentation 2/2；任何缺失项标为“未验证”，不能凭代码存在声称通过。
+最终结论必须列出：最终源码/品牌资源/APK/AAB SHA-256、Launcher 截图、Splash 帧、离线冷启、内置隐私、PNG 尺寸与 Sharesheet、进度恢复三项计数、Instrumentation 3/3；任何缺失项标为“未验证”，不能凭代码存在声称通过。

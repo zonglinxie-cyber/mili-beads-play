@@ -1,3 +1,3 @@
-355d6fc6e7f416e90040721ca409484eadd85e86b1a40cab571b32c654c48537  artifacts/mili-beads-android-test.apk
-b7ad29895220898b87a464146b86ca1c5bffaedb27301744c4ebdf8e8c71e027  artifacts/mili-beads-android-release-unsigned.aab
-81e79afa33a29c0dd22a5a29715e1c97b5a141a746e9e6664abba1c4fc9b25fc  artifacts/mili-beads-ios-project.zip
+f8071bc688dea51e0c08d86d42fed25ae20157c9211b7298d4bbd2004e702d90  artifacts/mili-beads-android-test.apk
+48b82117f1e5c96865c4a26443e093b4d72418e4fd20bcec0a9c16151e5d7b6c  artifacts/mili-beads-android-release-unsigned.aab
+3e82eb29d24ab67574bba5aa9c429e057a015c22f6dcc0bdbaf54f1843752f69  artifacts/mili-beads-ios-project.zip

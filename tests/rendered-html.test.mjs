@@ -32,8 +32,9 @@ test("ships installable offline assets", async () => {
   ]);
   assert.equal(manifest.display, "standalone");
   assert.equal(manifest.short_name, "米粒拼豆");
-  assert.match(sw, /mili-beads-v4/);
+  assert.match(sw, /mili-beads-v5/);
   assert.match(sw, /\/privacy/);
+  assert.match(sw, /\/support/);
   assert.match(sw, /clients\.claim/);
 });
 
@@ -62,4 +63,38 @@ test("provides a parent-facing privacy page", async () => {
   assert.match(html, /家长与隐私说明/);
   assert.match(html, /不包含广告/);
   assert.match(html, /当前设备/);
+});
+
+test("provides a public parent support page", async () => {
+  const response = await fetch(`http://127.0.0.1:${port}/support`);
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /支持与常见问题/);
+  assert.match(html, /联系我们/);
+});
+
+test("native save mutations share a guarded queue and recover interrupted deletion", async () => {
+  const fs = await import("node:fs/promises");
+  const source = await fs.readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.match(source, /type SavePhase = "hydrating" \| "ready" \| "read-error" \| "deleting" \| "delete-error"/);
+  assert.match(source, /const enqueueNative = <T,>/);
+  assert.match(source, /DurableStore\.set\(\{ key: SAVE_KEY/);
+  assert.match(source, /enqueueNative\(\(\) => DurableStore\.remove\(\{ key: SAVE_KEY \}\)\)/);
+  assert.match(source, /DurableStore\.get\(\{ key: DELETE_PENDING_KEY \}\)/);
+  assert.match(source, /enqueueNative\(\(\) => DurableStore\.set\(\{ key: DELETE_PENDING_KEY, value: DELETE_TOMBSTONE \}\)\)/);
+  assert.match(source, /enqueueNative\(\(\) => DurableStore\.remove\(\{ key: DELETE_PENDING_KEY \}\)\)/);
+  assert.match(source, /DurableStore\.getLegacy\(\{ key: DELETE_PENDING_KEY \}\)/, "升级时必须先兑现旧版删除标记");
+  assert.match(source, /for \(const legacyKey of \[SAVE_KEY, \.\.\.LEGACY_SAVE_KEYS\]\)/, "新存储为空时必须按 v3→v2 迁移旧版进度");
+  assert.match(source, /enqueueNative\(\(\) => DurableStore\.clearLegacy\(\)\)/, "迁移或清除后必须清理整个旧版命名空间");
+  assert.match(source, /DurableStore\.set\(\{ key: LEGACY_CLEAN_KEY, value: LEGACY_CLEAN_VALUE \}\)/, "旧仓清理完成后必须落耐久完成标记");
+  assert.ok(source.indexOf("DurableStore.get({ key: DELETE_PENDING_KEY })") < source.indexOf("DurableStore.get({ key: SAVE_KEY })"));
+  assert.ok(source.indexOf("DurableStore.getLegacy({ key: DELETE_PENDING_KEY })") < source.indexOf("DurableStore.get({ key: SAVE_KEY })"));
+  assert.ok(source.indexOf("DurableStore.set({ key: DELETE_PENDING_KEY, value: DELETE_TOMBSTONE })") < source.indexOf("DurableStore.remove({ key: SAVE_KEY })"));
+  assert.ok(source.indexOf("DurableStore.remove({ key: SAVE_KEY })") < source.indexOf("DurableStore.remove({ key: DELETE_PENDING_KEY })"));
+  assert.match(source, /DurableStore\.set\(\{ key: SAVE_KEY, value: serializeSave\(empty\) \}\)/);
+  assert.doesNotMatch(source, /localStorage\.getItem\(DELETE_PENDING_KEY\)/);
+  assert.match(source, /saveGenerationRef\.current/);
+  assert.match(source, /savePhaseRef\.current !== "ready"/);
+  assert.doesNotMatch(source, /void (?:Preferences|DurableStore)\.remove/);
+  assert.doesNotMatch(source, /\.catch\(\(\) => setSaveReady\(true\)\)/);
 });
