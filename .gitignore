@@ -12,6 +12,11 @@
 
 # testing
 /coverage
+/test-results/
+/release/e2e-report/
+*.tsbuildinfo
+__pycache__/
+*.pyc
 
 # next.js
 /.next/
@@ -40,3 +45,6 @@ yarn-error.log*
 /work/
 /android/**/build/
 /release/artifacts/
+/release/native-verification-v10/
+/release/native-verification-brand-final/
+/android/release/

@@ -32,13 +32,19 @@ test("ships installable offline assets", async () => {
   ]);
   assert.equal(manifest.display, "standalone");
   assert.equal(manifest.short_name, "米粒拼豆");
-  assert.match(sw, /mili-beads-v1/);
+  assert.match(sw, /mili-beads-v4/);
+  assert.match(sw, /\/privacy/);
+  assert.match(sw, /clients\.claim/);
 });
 
 test("ships a real playable pattern catalog", async () => {
-  const source = await import("node:fs/promises").then(fs => fs.readFile(new URL("../app/page.tsx", import.meta.url), "utf8"));
-  assert.match(source, /const PATTERNS: Pattern\[\]/);
-  assert.equal((source.match(/id:\s*"[a-z-]+"/g) ?? []).length, 12);
+  const fs = await import("node:fs/promises");
+  const [source, catalog] = await Promise.all([
+    fs.readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    fs.readFile(new URL("../app/patterns.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(catalog, /export const PATTERNS: Pattern\[\]/);
+  assert.equal((catalog.match(/id:\s*"[a-z-]+"/g) ?? []).length, 12);
   assert.match(source, /onPointerDown/);
   assert.match(source, /setSavedBoards/);
   assert.match(source, /finish-sheet/);
@@ -46,7 +52,7 @@ test("ships a real playable pattern catalog", async () => {
   assert.match(source, /生成打印图/);
   assert.match(source, /生成作品卡/);
   assert.match(source, /播放动画/);
-  assert.match(source, /PATTERNS\.forEach/);
+  assert.match(catalog, /PATTERNS\.forEach/);
 });
 
 test("provides a parent-facing privacy page", async () => {

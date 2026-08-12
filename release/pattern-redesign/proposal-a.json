@@ -1,0 +1,565 @@
+{
+  "schemaVersion": 1,
+  "grid": {
+    "width": 18,
+    "height": 18
+  },
+  "layerLegend": {
+    "B": "body",
+    "P": "prop",
+    "F": "fx",
+    ".": "empty"
+  },
+  "physicalRules": {
+    "connectivity": "4-neighbour",
+    "isolatedBeads": 0,
+    "maximumPieces": 3,
+    "minimumDetachedPieceBeads": 4,
+    "note": "所有有豆格必须且只能归入body/prop/fx其中一层。"
+  },
+  "qa": {
+    "dimensions": "PASS: every rows/layers array is exactly 18x18",
+    "layerCoverage": "PASS: every bead belongs to exactly one of B/P/F; every empty cell is .",
+    "usedColors": "PASS: every pattern uses 5-6 declared colors; no zero-count palette entries",
+    "connectivity": "PASS: at most 3 four-neighbour pieces; every detached piece has at least 4 beads",
+    "loadBearing": "PASS: removing any single bead from the main piece does not split it into two pieces of 4+ beads",
+    "visualCheck": "PASS: inspected at 96px round-bead size; role and dominant action/prop remain distinguishable"
+  },
+  "patterns": [
+    {
+      "id": "rocket-cat",
+      "name": "火箭背包橘猫",
+      "story": "橘猫伸爪追星，背包尾焰拖出大弧线",
+      "motion": "launch",
+      "animation": "body上升，prop背包抖动，fx星星闪烁",
+      "pieceNote": "2件：猫与火箭主件 + 5颗星星特效件。",
+      "rows": [
+        "...............Y..",
+        "........K...K.YYY.",
+        ".......KOK.KOK....",
+        "......KOOOOOOOK...",
+        ".....KOWOOKWOOK...",
+        ".....KOOOWOOOOK...",
+        "..RRRKOOOOOOOOK...",
+        ".RNNRKOOOOOOKKK...",
+        ".RNNRROOOWOOOKK...",
+        "RRNNRROOOWWWOOOK..",
+        "RNNNRROOOWWWOOOK..",
+        ".RRRRRKOOOWOOOK...",
+        ".RYYRRKKOOOOKK....",
+        "RYYYYR.KK..KK.....",
+        ".RYYYRKK..KK......",
+        "..RYRRR...........",
+        "...RYR............",
+        "....RR............"
+      ],
+      "palette": {
+        "K": {
+          "name": "墨黑",
+          "color": "#29283b"
+        },
+        "W": {
+          "name": "奶油白",
+          "color": "#fff5df"
+        },
+        "O": {
+          "name": "蜜橘",
+          "color": "#ee7b52"
+        },
+        "Y": {
+          "name": "星光黄",
+          "color": "#f5c95d"
+        },
+        "R": {
+          "name": "莓果红",
+          "color": "#cf4e61"
+        },
+        "N": {
+          "name": "深海蓝",
+          "color": "#355276"
+        }
+      },
+      "layers": [
+        "...............F..",
+        "........B...B.FFF.",
+        ".......BBB.BBB....",
+        "......BBBBBBBBB...",
+        ".....BBBBBBBBBB...",
+        ".....BBBBBBBBBB...",
+        "..PPPPPPBBBBBBB...",
+        ".PPPPPPPBBBBBBB...",
+        ".PPPPPPPBBBBBBB...",
+        "PPPPPPPPBBBBBBBB..",
+        "PPPPPPPPBBBBBBBB..",
+        ".PPPPPPPBBBBBBB...",
+        ".PPPPPPPBBBBBB....",
+        "PPPPPP.PB..BB.....",
+        ".PPPPPPP..BB......",
+        "..PPPPP...........",
+        "...PPP............",
+        "....PP............"
+      ],
+      "metrics": {
+        "beads": 170,
+        "usedColors": 6,
+        "components": 2,
+        "componentSizes": [
+          166,
+          4
+        ],
+        "isolatedBeads": 0,
+        "structuralPinches": 0,
+        "layerCounts": {
+          "B": 92,
+          "P": 74,
+          "F": 4
+        }
+      }
+    },
+    {
+      "id": "cloud-otter",
+      "name": "云朵冲浪水獭",
+      "story": "水獭一手撑伞，踩着云浪侧身滑行",
+      "motion": "glide",
+      "animation": "body左右平衡，prop伞面倾斜，fx云浪起伏",
+      "pieceNote": "1件连体作品；伞柄与身体、双脚与云板均相连。",
+      "rows": [
+        "......NNNNN.......",
+        "....NNBBBBBNN.....",
+        "...NBBBBBBBBBN....",
+        "...NNNNNNNNNNN....",
+        ".......CCC........",
+        ".......CCC........",
+        "......CCCCC.......",
+        ".....CTTTTTC......",
+        "....CTTKTTKTC.....",
+        "....CTTTWTTTC.....",
+        "....CTTTTTTC......",
+        "..CCCCCTWWWTC.....",
+        ".CCTTCCWWWTC.CC...",
+        "CCTTTTCTTTTCTTCC..",
+        ".CCTTTT.TTTCCTTC..",
+        ".WWWWWWWWWWWWW....",
+        "WWWWBBBBBBWWWW....",
+        "..WBBBBBBB.W......"
+      ],
+      "palette": {
+        "K": {
+          "name": "墨黑",
+          "color": "#29283b"
+        },
+        "W": {
+          "name": "奶油白",
+          "color": "#fff5df"
+        },
+        "C": {
+          "name": "可可棕",
+          "color": "#8a5d4a"
+        },
+        "T": {
+          "name": "焦糖",
+          "color": "#c58a5b"
+        },
+        "B": {
+          "name": "湖水蓝",
+          "color": "#5daabe"
+        },
+        "N": {
+          "name": "深海蓝",
+          "color": "#355276"
+        }
+      },
+      "layers": [
+        "......PPPPP.......",
+        "....PPPPPPPPP.....",
+        "...PPPPPPPPPPP....",
+        "...PPPPPPPPPPP....",
+        ".......PPP........",
+        ".......PPP........",
+        "......BBBBB.......",
+        ".....BBBBBBB......",
+        "....BBBBBBBBB.....",
+        "....BBBBBBBBB.....",
+        "....BBBBBBBB......",
+        "..PPPPBBBBBBB.....",
+        ".PPPPPBBBBBB.PP...",
+        "PPPPPPBBBBBBBPPP..",
+        ".PPPPPB.BBBBBPPP..",
+        ".FFFFFFFFFFFFF....",
+        "FFFFFFFFFFFFFF....",
+        "..FFFFFFFF.F......"
+      ],
+      "metrics": {
+        "beads": 170,
+        "usedColors": 6,
+        "components": 1,
+        "componentSizes": [
+          170
+        ],
+        "isolatedBeads": 0,
+        "structuralPinches": 0,
+        "layerCounts": {
+          "B": 64,
+          "P": 70,
+          "F": 36
+        }
+      }
+    },
+    {
+      "id": "star-dragon",
+      "name": "追星小青龙",
+      "story": "小青龙盘成S弯，伸爪去接掉落的星星",
+      "motion": "twist",
+      "animation": "body盘旋，prop龙角与鬃毛摆动，fx星星落入前爪",
+      "pieceNote": "2件：青龙主件 + 5颗星星特效件。",
+      "rows": [
+        "...........OOOO...",
+        "..........OOO...Y.",
+        "..........OOO..YYY",
+        ".......OGGGGGG..Y.",
+        "......GGGKLGGGG...",
+        "......GLLLLGGGGG..",
+        ".....GGGWGGGOGG...",
+        "....GGGWWWGGGG....",
+        "...GGGGWWWGGG.....",
+        "..GGGG..WGGG......",
+        ".GGGG...WGG.......",
+        "GGG....WWGG.......",
+        "GGG...WWGGG.......",
+        "GGG..WWGGG........",
+        "GGGGWWGGG.........",
+        ".GGGGGGG..........",
+        "..GGGGG...........",
+        "...GGG............"
+      ],
+      "palette": {
+        "K": {
+          "name": "墨黑",
+          "color": "#29283b"
+        },
+        "W": {
+          "name": "奶油白",
+          "color": "#fff5df"
+        },
+        "O": {
+          "name": "蜜橘",
+          "color": "#ee7b52"
+        },
+        "Y": {
+          "name": "星光黄",
+          "color": "#f5c95d"
+        },
+        "G": {
+          "name": "叶子绿",
+          "color": "#6ba270"
+        },
+        "L": {
+          "name": "嫩芽绿",
+          "color": "#a8ca79"
+        }
+      },
+      "layers": [
+        "...........PPPP...",
+        "..........PPP...F.",
+        "..........PPP..FFF",
+        ".......PBBBBBB..F.",
+        "......BBBBBBBBB...",
+        "......BBBBBBBBBB..",
+        ".....BBBBBBBPBB...",
+        "....BBBBBBBBBB....",
+        "...BBBBBBBBBB.....",
+        "..BBBB..BBBB......",
+        ".BBBB...BBB.......",
+        "BBB....BBBB.......",
+        "BBB...BBBBB.......",
+        "BBB..BBBBB........",
+        "BBBBBBBBB.........",
+        ".BBBBBBB..........",
+        "..BBBBB...........",
+        "...BBB............"
+      ],
+      "metrics": {
+        "beads": 133,
+        "usedColors": 6,
+        "components": 2,
+        "componentSizes": [
+          128,
+          5
+        ],
+        "isolatedBeads": 0,
+        "structuralPinches": 0,
+        "layerCounts": {
+          "B": 116,
+          "P": 12,
+          "F": 5
+        }
+      }
+    },
+    {
+      "id": "frog-post",
+      "name": "青蛙邮差跳水坑",
+      "story": "青蛙抱紧邮包腾空，两封信在手边展开",
+      "motion": "hop",
+      "animation": "body起跳，prop邮包与信封晃动，fx两束水花向外飞溅",
+      "pieceNote": "3件：邮差青蛙主件 + 左右两束4颗以上的水花特效件。",
+      "rows": [
+        ".......NNNN.......",
+        "......NNNNNN......",
+        ".....GGGGGGGG.....",
+        "....GWKGKGWGGG....",
+        "....GGGGGGGGGG....",
+        ".....GLLWLLGG.....",
+        "...WWGGGGGGGGWW...",
+        "..WNNGGNNGGGNNW...",
+        "..WNNGGNNNNGGNNW..",
+        "....GGNNNNGG......",
+        ".....GNNNNGG......",
+        "....GGGLLGGG......",
+        "..GGGLL..LLGGG....",
+        ".GGGLL....LLGGG...",
+        ".GGGG......GGGG...",
+        ".GGG........GGG...",
+        ".....B....B.......",
+        "....BBB..BBB......"
+      ],
+      "palette": {
+        "K": {
+          "name": "墨黑",
+          "color": "#29283b"
+        },
+        "W": {
+          "name": "奶油白",
+          "color": "#fff5df"
+        },
+        "G": {
+          "name": "叶子绿",
+          "color": "#6ba270"
+        },
+        "L": {
+          "name": "嫩芽绿",
+          "color": "#a8ca79"
+        },
+        "B": {
+          "name": "湖水蓝",
+          "color": "#5daabe"
+        },
+        "N": {
+          "name": "深海蓝",
+          "color": "#355276"
+        }
+      },
+      "layers": [
+        ".......PPPP.......",
+        "......PPPPPP......",
+        ".....BBBBBBBB.....",
+        "....BBBBBBBBBB....",
+        "....BBBBBBBBBB....",
+        ".....BBBBBBBB.....",
+        "...PBBBBBBBBBBP...",
+        "..PPPBBPPBBBPPP...",
+        "..PPPBBPPPPBBPPP..",
+        "....BBPPPPBB......",
+        ".....BPPPPBB......",
+        "....BBBBBBBB......",
+        "..BBBBB..BBBBB....",
+        ".BBBBB....BBBBB...",
+        ".BBBB......BBBB...",
+        ".BBB........BBB...",
+        ".....F....F.......",
+        "....FFF..FFF......"
+      ],
+      "metrics": {
+        "beads": 150,
+        "usedColors": 6,
+        "components": 3,
+        "componentSizes": [
+          142,
+          4,
+          4
+        ],
+        "isolatedBeads": 0,
+        "structuralPinches": 0,
+        "layerCounts": {
+          "B": 104,
+          "P": 38,
+          "F": 8
+        }
+      }
+    },
+    {
+      "id": "moon-rabbit",
+      "name": "月兔投递星星",
+      "story": "月兔坐在弯月邮袋里，把一颗星星抛向夜空",
+      "motion": "bounce",
+      "animation": "body轻跳，prop弯月邮袋摇晃，fx星星沿弧线上升",
+      "pieceNote": "2件：月兔与弯月邮袋主件 + 5颗星星特效件。",
+      "rows": [
+        ".....NN....NN.....",
+        "....NWWN..NWWN....",
+        "....NWPW..NWPW....",
+        "....NWWWNNWWWN....",
+        ".....NWWWWWWN.....",
+        "....NWWKWWKWWN....",
+        "....NWWWPWWWWN....",
+        ".....NWWWWWWN...Y.",
+        "......NNWWNN...YYY",
+        "...YYYYNNWWNN...Y.",
+        "..YYYYYNWWNNN.....",
+        "..YYYYYNWWNBBN....",
+        "..YYYYNNWWNBBN....",
+        "..YYYYNNWWNNBBN...",
+        "...YYYNNWWNNBBN...",
+        "....YYYYYYYYBBN...",
+        ".....YYYYYYNN.....",
+        ".......YY........."
+      ],
+      "palette": {
+        "K": {
+          "name": "墨黑",
+          "color": "#29283b"
+        },
+        "W": {
+          "name": "奶油白",
+          "color": "#fff5df"
+        },
+        "P": {
+          "name": "樱花粉",
+          "color": "#ef91a7"
+        },
+        "Y": {
+          "name": "星光黄",
+          "color": "#f5c95d"
+        },
+        "B": {
+          "name": "湖水蓝",
+          "color": "#5daabe"
+        },
+        "N": {
+          "name": "深海蓝",
+          "color": "#355276"
+        }
+      },
+      "layers": [
+        ".....BB....BB.....",
+        "....BBBB..BBBB....",
+        "....BBBB..BBBB....",
+        "....BBBBBBBBBB....",
+        ".....BBBBBBBB.....",
+        "....BBBBBBBBBB....",
+        "....BBBBBBBBBB....",
+        ".....BBBBBBBB...F.",
+        "......BBBBBB...FFF",
+        "...PPPPBBBBBB...F.",
+        "..PPPPPBBBBBB.....",
+        "..PPPPPBBBBPPB....",
+        "..PPPPBBBBBPPB....",
+        "..PPPPBBBBBBPPB...",
+        "...PPPBBBBBBPPB...",
+        "....PPPPPPPPPPB...",
+        ".....PPPPPPBB.....",
+        ".......PP........."
+      ],
+      "metrics": {
+        "beads": 168,
+        "usedColors": 6,
+        "components": 2,
+        "componentSizes": [
+          163,
+          5
+        ],
+        "isolatedBeads": 0,
+        "structuralPinches": 0,
+        "layerCounts": {
+          "B": 112,
+          "P": 51,
+          "F": 5
+        }
+      }
+    },
+    {
+      "id": "lantern-fox",
+      "name": "三尾狐提灯夜游",
+      "story": "三尾狐跃过月色，前爪提着一盏发光灯笼",
+      "motion": "sway",
+      "animation": "body跃起，prop灯笼摆动，fx灯光一明一暗",
+      "pieceNote": "1件连体作品；灯柄与前爪相连，三条尾巴都以两颗以上宽度接入身体。",
+      "rows": [
+        ".....K.....K......",
+        "....KOK...KOK.....",
+        "...KOOOOOOOOOK....",
+        "...KOWKOOOKWOOK...",
+        "...KOOOOOWOOOOK...",
+        "....KOOOOOOOK.....",
+        ".....KOOOOOK......",
+        "....RKOOOOKROO....",
+        "...RROOOOOROWW....",
+        "..RROOWOOOROOW....",
+        "..RYYROOOOROOO....",
+        ".KYYYROOOOROWW....",
+        "KYYYYROOOOROOW....",
+        ".KYYYROOOOROOO....",
+        "..RRRROOOOROWW....",
+        "...RR..KOOOKROW...",
+        ".......KK.KK......",
+        ".................."
+      ],
+      "palette": {
+        "K": {
+          "name": "墨黑",
+          "color": "#29283b"
+        },
+        "W": {
+          "name": "奶油白",
+          "color": "#fff5df"
+        },
+        "O": {
+          "name": "蜜橘",
+          "color": "#ee7b52"
+        },
+        "Y": {
+          "name": "星光黄",
+          "color": "#f5c95d"
+        },
+        "R": {
+          "name": "莓果红",
+          "color": "#cf4e61"
+        }
+      },
+      "layers": [
+        ".....B.....B......",
+        "....BBB...BBB.....",
+        "...BBBBBBBBBBB....",
+        "...BBBBBBBBBBBB...",
+        "...BBBBBBBBBBBB...",
+        "....BBBBBBBBB.....",
+        ".....BBBBBBB......",
+        "....PPBBBBBBBB....",
+        "...PPPBBBBBBBB....",
+        "..PPPPBBBBBBBB....",
+        "..PFFPBBBBBBBB....",
+        ".PFFFPBBBBBBBB....",
+        "PFFFFPBBBBBBBB....",
+        ".PFFFPBBBBBBBB....",
+        "..PPPPBBBBBBBB....",
+        "...PP..BBBBBBBB...",
+        ".......BB.BB......",
+        ".................."
+      ],
+      "metrics": {
+        "beads": 170,
+        "usedColors": 5,
+        "components": 1,
+        "componentSizes": [
+          170
+        ],
+        "isolatedBeads": 0,
+        "structuralPinches": 0,
+        "layerCounts": {
+          "B": 135,
+          "P": 23,
+          "F": 12
+        }
+      }
+    }
+  ]
+}
