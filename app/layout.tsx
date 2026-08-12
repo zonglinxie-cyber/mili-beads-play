@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   applicationName: "米粒拼豆社",
   appleWebApp: { capable: true, title: "米粒拼豆", statusBarStyle: "default" },
-  openGraph: { title: "米粒拼豆社", description: "把小豆子拼成大冒险。", images: ["/og.png"] },
-  twitter: { card: "summary_large_image", title: "米粒拼豆社", description: "把小豆子拼成大冒险。", images: ["/og.png"] },
+  openGraph: { title: "米粒拼豆社", description: "把小豆子拼成大冒险。", images: ["/og-v2.png"] },
+  twitter: { card: "summary_large_image", title: "米粒拼豆社", description: "把小豆子拼成大冒险。", images: ["/og-v2.png"] },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

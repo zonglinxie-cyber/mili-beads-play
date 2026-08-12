@@ -138,6 +138,7 @@ export default function Home() {
         <div className="featured-list">{PATTERNS.slice(1,4).map(p=><Card key={p.id} pattern={p} onOpen={()=>openGame(p.id)} finished={completed.includes(p.id)} />)}</div>
         <section className="mystery-card"><div><span>?</span></div><section><small>神秘拼豆</small><h2>不看答案，边拼边猜</h2><p>每完成一种颜色，揭开一部分图案。</p><button onClick={()=>{openGame("moon-rabbit");setHint(false)}}>试试看</button></section></section>
         {installEvent && <button className="install-banner" onClick={()=>installEvent.prompt?.()}><span>＋</span><p><b>放到手机桌面</b><small>像普通游戏一样，点一下就能玩</small></p><i>安装</i></button>}
+        <a className="parent-link" href="/privacy">家长与隐私说明</a>
       </>}
 
       {tab === "library" && <section className="library"><div className="page-head"><small>图纸宝库</small><h1>今天拼哪个？</h1><p>所有图形都完整展示，点开就能直接玩。</p></div><div className="filters">{categories.map(c=><button key={c} className={filter===c?"active":""} onClick={()=>setFilter(c)}>{c}</button>)}</div><div className="library-list">{PATTERNS.filter(p=>filter==="全部"||p.category===filter).map(p=><Card key={p.id} pattern={p} onOpen={()=>openGame(p.id)} finished={completed.includes(p.id)} />)}</div></section>}

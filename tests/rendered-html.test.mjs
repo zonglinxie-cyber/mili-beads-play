@@ -43,3 +43,12 @@ test("ships a real playable pattern catalog", async () => {
   assert.match(source, /setSavedBoards/);
   assert.match(source, /finish-sheet/);
 });
+
+test("provides a parent-facing privacy page", async () => {
+  const response = await fetch(`http://127.0.0.1:${port}/privacy`);
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(html, /家长与隐私说明/);
+  assert.match(html, /不包含广告/);
+  assert.match(html, /当前设备/);
+});
