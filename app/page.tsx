@@ -76,9 +76,9 @@ function countColors(grid: number[], colors: number) {
   return Array.from({ length: colors }, (_, color) => grid.filter(v => v === color).length);
 }
 
-function PixelBoard({ project, part = 0, focus = null, compact = false }: { project: PixelProject; part?: number; focus?: number | null; compact?: boolean }) {
+function PixelBoard({ project, part = 0, focus = null, compact = false, zoom = 1 }: { project: PixelProject; part?: number; focus?: number | null; compact?: boolean; zoom?: number }) {
   const grid = useMemo(() => createGrid(project, part), [project, part]);
-  return <div className={`pixel-board ${compact ? "compact" : ""}`} style={{ "--grid": project.size } as React.CSSProperties} aria-label={`${project.title}${project.parts[part]}图纸`}>
+  return <div className={`pixel-board ${compact ? "compact" : ""}`} style={{ "--grid": project.size, "--zoom": zoom } as React.CSSProperties} aria-label={`${project.title}${project.parts[part]}图纸`}>
     {grid.map((color, i) => <i key={i} className={color < 0 ? "empty" : focus !== null && color !== focus ? "muted-bead" : ""} style={color < 0 ? undefined : { backgroundColor: project.palette[color] }}><span>{color >= 0 ? color + 1 : ""}</span></i>)}
   </div>;
 }
@@ -117,6 +117,8 @@ export default function Home() {
   const [magicMode, setMagicMode] = useState<"move" | "scene">("move");
   const [magicStyle, setMagicStyle] = useState(0);
   const [generated, setGenerated] = useState(false);
+  const [boardZoom, setBoardZoom] = useState(1);
+  const [fullscreenBoard, setFullscreenBoard] = useState(false);
   const uploadRef = useRef<HTMLInputElement>(null);
 
   const project = PROJECTS.find(p => p.id === activeId) ?? PROJECTS[0];
@@ -133,7 +135,7 @@ export default function Home() {
   useEffect(() => { window.localStorage.setItem("mili-beads-state", JSON.stringify({ favorites })); }, [favorites]);
 
   const notify = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 1800); };
-  const openProject = (id: string) => { setActiveId(id); setPart(0); setFocusColor(null); setDoneColors([]); setScreen("detail"); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const openProject = (id: string) => { setActiveId(id); setPart(0); setFocusColor(null); setDoneColors([]); setBoardZoom(1); setScreen("detail"); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const toggleFavorite = (id: string) => setFavorites(v => v.includes(id) ? v.filter(x => x !== id) : [...v, id]);
   const onUpload = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (!file) return; if (imageUrl) URL.revokeObjectURL(imageUrl); setImageUrl(URL.createObjectURL(file)); setImageName(file.name); setGenerated(false); };
 
@@ -164,7 +166,7 @@ export default function Home() {
         <button className="back" onClick={()=>setScreen("library")}>← 返回图纸库</button>
         <div className="detail-head"><div><span className={`level ${project.difficulty}`}>{project.difficulty}</span><span>{project.structure}</span></div><h1>{project.title}</h1><p>{project.tagline}</p><small>{project.source}</small></div>
         <div className="detail-stats"><div><b>{project.parts.length}</b><span>零件</span></div><div><b>{project.beads.toLocaleString()}</b><span>约需豆子</span></div><div><b>{project.time.replace("约 ","")}</b><span>预计用时</span></div></div>
-        <div className="board-panel"><div className="board-toolbar"><div><b>{project.parts[part]}</b><small>{project.size} × {project.size} 格 · 点击色号专注拼</small></div><button onClick={()=>printProject(project,part)}>打印</button></div><PixelBoard project={project} part={part} focus={focusColor} /></div>
+        <div className="board-panel"><div className="board-toolbar"><div><b>{project.parts[part]}</b><small>{project.size} × {project.size} 格 · 完整图纸</small></div><div className="board-actions"><button onClick={()=>printProject(project,part)}>打印</button><button className="full-board-button" onClick={()=>setFullscreenBoard(true)}>全屏看图</button></div></div><div className="board-fit"><PixelBoard project={project} part={part} focus={focusColor} /></div><p className="board-hint">图形已按底板完整显示，不裁切；点“全屏看图”可放大拖动。</p></div>
         <div className="part-picker"><div className="section-heading"><div><p className="kicker">零件 {part+1}/{project.parts.length}</p><h2>先拼哪一块？</h2></div></div><div>{project.parts.map((name,i)=><button key={`${name}-${i}`} className={part===i?"active":""} onClick={()=>{setPart(i);setDoneColors([]);setFocusColor(null)}}><span>{i+1}</span>{name}</button>)}</div></div>
         <div className="color-assistant"><div className="assistant-head"><div><p className="kicker">专心拼豆模式</p><h2>一次只看一种颜色</h2></div><b>{progress}%</b></div><div className="progress"><i style={{width:`${progress}%`}} /></div><div className="color-list">{project.palette.map((color,i)=><button key={color} className={`${focusColor===i?"focused":""} ${doneColors.includes(i)?"done":""}`} onClick={()=>setFocusColor(focusColor===i?null:i)}><i style={{background:color}} /><span><b>{i+1} · {project.colorNames[i]}</b><small>{counts[i]} 颗</small></span><em onClick={(e)=>{e.stopPropagation();setDoneColors(v=>v.includes(i)?v.filter(x=>x!==i):[...v,i])}}>{doneColors.includes(i)?"✓":"○"}</em></button>)}</div><button className="show-all" onClick={()=>setFocusColor(null)}>显示全部颜色</button></div>
         <div className="assembly"><p className="kicker">最后一步</p><h2>装配顺序</h2><ol><li><span>1</span><p><b>完成并压平所有零件</b>趁温热时夹在厚书中，保持平整。</p></li><li><span>2</span><p><b>先试插，不要用力</b>卡槽过紧时请大人修剪，不要硬掰。</p></li><li><span>3</span><p><b>装上活动机关</b>转轴和关节少熨一点，活动会更顺畅。</p></li></ol></div>
@@ -185,7 +187,7 @@ export default function Home() {
 
       {screen !== "detail" && <nav className="bottom-nav"><button className={screen==="discover"?"active":""} onClick={()=>setScreen("discover")}><span>⌂</span>发现</button><button className={screen==="library"?"active":""} onClick={()=>setScreen("library")}><span>▦</span>图纸</button><button className={`magic-nav ${screen==="magic"?"active":""}`} onClick={()=>setScreen("magic")}><span>✦</span>实验室</button><button className={screen==="mine"?"active":""} onClick={()=>setScreen("mine")}><span>☺</span>米粒</button></nav>}
     </section>
-    <aside className="desktop-note"><p className="kicker">专为米粒做的私人拼豆工具</p><h2>不追求图多，<br />只收真正想做的。</h2><p>复杂图纸被拆成零件、颜色和装配步骤。手机负责陪拼，A4 纸负责摆在桌上慢慢做。</p><div><span>01</span>按机关和结构找图纸</div><div><span>02</span>逐色高亮，减少找豆焦虑</div><div><span>03</span>成品照片进入趣味场景</div></aside>
+    {fullscreenBoard && <div className="fullscreen-board" role="dialog" aria-modal="true" aria-label={`${project.title}全屏图纸`}><header><button onClick={()=>setFullscreenBoard(false)}>← 退出全屏</button><div><b>{project.parts[part]}</b><small>{project.size} × {project.size} 格</small></div><button onClick={()=>printProject(project,part)}>打印</button></header><div className="fullscreen-canvas"><div className="zoom-board"><PixelBoard project={project} part={part} focus={focusColor} zoom={boardZoom} /></div></div><footer><button onClick={()=>setBoardZoom(z=>Math.max(.8,Number((z-.25).toFixed(2))))}>－</button><button onClick={()=>setBoardZoom(1)}>适合屏幕</button><b>{Math.round(boardZoom*100)}%</b><button onClick={()=>setBoardZoom(z=>Math.min(2.5,Number((z+.25).toFixed(2))))}>＋</button></footer></div>}
     {toast && <div className="toast">{toast}</div>}
   </main>;
 }
