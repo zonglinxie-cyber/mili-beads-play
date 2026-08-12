@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">米粒拼豆社</string>
+    <string name="title_activity_main">米粒拼豆社</string>
+    <string name="package_name">family.mili.beads</string>
+    <string name="custom_url_scheme">family.mili.beads</string>
+</resources>
