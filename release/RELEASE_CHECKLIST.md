@@ -15,6 +15,9 @@
 - [x] 构建、Lint、渲染和离线资源测试
 - [x] Capacitor iOS / Android 原生工程
 - [x] iOS Privacy Manifest 与 Android 明文流量禁用
+- [x] Android 15 模拟真机安装、冷启动和触控放豆验证
+- [x] Android Debug APK 与未签名 Release AAB 产物
+- [x] Android Lint 无新问题，单元测试通过
 
 ## 提交商店前需要开发者账户完成
 
@@ -25,4 +28,4 @@
 - [ ] 签名并上传原生安装包
 - [ ] 填写儿童类应用问卷与内容分级
 
-当前交付同时包含可安装移动 Web App 和 Capacitor iOS / Android 原生工程。提交商店仍需开发者账户和签名证书；这些属于账户发行权限，不应伪造。
+当前交付同时包含可安装移动 Web App、Android 可安装测试包、Android 商店格式 AAB 和 iOS / Android 原生工程。提交商店仍需开发者账户和正式签名证书；这些属于账户发行权限，不应伪造。
