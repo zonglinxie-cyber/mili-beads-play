@@ -19,7 +19,7 @@ test.after(() => server?.kill());
 test("renders the complete mobile bead game shell", async () => {
   const html = await fetch(`http://127.0.0.1:${port}`).then(r => r.text());
   assert.match(html, /米粒拼豆社/);
-  assert.match(html, /宇航员小猫/);
+  assert.match(html, /火箭猫/);
   assert.match(html, /一眼就想拼的图纸/);
   assert.match(html, /图纸/);
   assert.doesNotMatch(html, /SkeletonPreview|codex-preview|ChatGPT 登录/);
@@ -38,13 +38,15 @@ test("ships installable offline assets", async () => {
 test("ships a real playable pattern catalog", async () => {
   const source = await import("node:fs/promises").then(fs => fs.readFile(new URL("../app/page.tsx", import.meta.url), "utf8"));
   assert.match(source, /const PATTERNS: Pattern\[\]/);
-  assert.equal((source.match(/id:\s*"[a-z-]+"/g) ?? []).length, 10);
+  assert.equal((source.match(/id:\s*"[a-z-]+"/g) ?? []).length, 12);
   assert.match(source, /onPointerDown/);
   assert.match(source, /setSavedBoards/);
   assert.match(source, /finish-sheet/);
   assert.match(source, /makePoster/);
   assert.match(source, /生成打印图/);
   assert.match(source, /生成作品卡/);
+  assert.match(source, /播放动画/);
+  assert.match(source, /PATTERNS\.forEach/);
 });
 
 test("provides a parent-facing privacy page", async () => {

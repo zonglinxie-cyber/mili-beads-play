@@ -33,6 +33,6 @@ Android 商店正式签名和 iOS Archive 必须在开发者自己的 Google Pla
 
 ## SHA-256
 
-- Android APK: `425db3753d22a2fdc8636d1b894c7af5e765e72471c2fb406ab43c26b4944f1d`
-- Android AAB: `5f4d9c4c6f3d7f05ba03f38940dc2ec8fba9b4e9389c11587de050393db808d7`
-- iOS project: `34d743fbf84ce9a17db60fe0b3e8082094a0128cc1aa915c333771b7c8d9b7e2`
+- Android APK: `188edc6837fed58ee2d9f265339a5c0c1627877877a5f9e431bcbe2f17cf2f8d`
+- Android AAB: `98f054d5877233a2d72853417ac773e141104b87d74f0924d2f610736bcd53bc`
+- iOS project: `93e5b2d1d397232e1db78eaac1b738363e796e1400a9beee929f1a764090db50`
