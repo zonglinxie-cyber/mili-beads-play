@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- generated posters are local canvas data URLs */
 
 import { PointerEvent, useEffect, useRef, useState } from "react";
 
@@ -12,6 +13,8 @@ type Pattern = {
   palette: Record<string, { name: string; color: string }>;
   rows: string[];
 };
+
+type Poster = { src: string; filename: string; kind: "print" | "work" };
 
 const P = {
   K: { name: "墨黑", color: "#29283b" }, W: { name: "奶油白", color: "#fff5df" },
@@ -68,6 +71,50 @@ function Card({ pattern, onOpen, finished }: { pattern: Pattern; onOpen: () => v
   </button>;
 }
 
+function makePoster(pattern: Pattern, kind: "print" | "work") {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1200; canvas.height = 1500;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+  const isWork = kind === "work";
+  ctx.fillStyle = isWork ? "#f8edda" : "#fffdf8"; ctx.fillRect(0, 0, 1200, 1500);
+  if (isWork) {
+    const glow = ctx.createRadialGradient(600, 670, 120, 600, 670, 680);
+    glow.addColorStop(0, "#ffe2b2"); glow.addColorStop(1, "#eadff600");
+    ctx.fillStyle = glow; ctx.fillRect(0, 0, 1200, 1400);
+  }
+  ctx.fillStyle = "#27233b"; ctx.font = "900 70px sans-serif"; ctx.textAlign = "center";
+  ctx.fillText(isWork ? `米粒完成了·${pattern.name}` : pattern.name, 600, 105);
+  ctx.fillStyle = "#8b7180"; ctx.font = "32px sans-serif";
+  ctx.fillText(isWork ? pattern.story : `${targetCount(pattern)} 颗 · 约 ${pattern.minutes} 分钟`, 600, 158);
+  const cell = 52; const size = cell * pattern.rows[0].length; const left = (1200 - size) / 2; const top = 215;
+  ctx.fillStyle = "#f2e7d8"; ctx.beginPath(); ctx.roundRect(left - 18, top - 18, size + 36, size + 36, 30); ctx.fill();
+  pattern.rows.forEach((row, y) => [...row].forEach((value, x) => {
+    const cx = left + x * cell + cell / 2; const cy = top + y * cell + cell / 2;
+    ctx.fillStyle = value === "." ? "#fffaf2" : pattern.palette[value].color;
+    if (isWork && value !== ".") {
+      ctx.beginPath(); ctx.arc(cx, cy, 21, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#4a3d4d20"; ctx.lineWidth = 2; ctx.stroke();
+    } else {
+      ctx.fillRect(left + x * cell + 2, top + y * cell + 2, cell - 4, cell - 4);
+      ctx.strokeStyle = "#eadfce"; ctx.lineWidth = 1; ctx.strokeRect(left + x * cell + 2, top + y * cell + 2, cell - 4, cell - 4);
+    }
+  }));
+  const legendTop = top + size + 70;
+  ctx.textAlign = "left"; ctx.fillStyle = "#27233b"; ctx.font = "800 34px sans-serif";
+  ctx.fillText(isWork ? "我的拼豆作品" : "颜色清单", 115, legendTop);
+  keys(pattern).forEach((key, index) => {
+    const col = index % 3; const row = Math.floor(index / 3); const x = 115 + col * 340; const y = legendTop + 60 + row * 66;
+    ctx.fillStyle = pattern.palette[key].color; ctx.beginPath(); ctx.arc(x + 18, y - 10, 18, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#625b69"; ctx.font = "26px sans-serif";
+    const count = pattern.rows.join("").split("").filter(v => v === key).length;
+    ctx.fillText(`${pattern.palette[key].name}  ${count} 颗`, x + 48, y);
+  });
+  ctx.textAlign = "center"; ctx.fillStyle = "#a26a66"; ctx.font = "700 26px sans-serif";
+  ctx.fillText(isWork ? "米粒拼豆社 · 把小豆子拼成大冒险" : "请由大人完成熨烫与裁剪", 600, 1450);
+  return canvas.toDataURL("image/png");
+}
+
 export default function Home() {
   const [tab, setTab] = useState<"home" | "library" | "game" | "works">("home");
   const [activeId, setActiveId] = useState(PATTERNS[0].id);
@@ -87,6 +134,7 @@ export default function Home() {
     try { return JSON.parse(localStorage.getItem("mili-game-v2") ?? "{}").boards ?? {}; } catch { return {}; }
   });
   const [celebrate, setCelebrate] = useState(false);
+  const [poster, setPoster] = useState<Poster | null>(null);
   const [installEvent, setInstallEvent] = useState<Event & { prompt?: () => Promise<void> } | null>(null);
   const gameRef = useRef<HTMLDivElement>(null);
   const pattern = PATTERNS.find(p => p.id === activeId) ?? PATTERNS[0];
@@ -99,7 +147,8 @@ export default function Home() {
   useEffect(() => {
     const handleInstall = (event: Event) => { event.preventDefault(); setInstallEvent(event as Event & { prompt?: () => Promise<void> }); };
     window.addEventListener("beforeinstallprompt", handleInstall);
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    const isNativeShell = location.hostname === "localhost";
+    if (!isNativeShell && "serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => undefined);
     return () => window.removeEventListener("beforeinstallprompt", handleInstall);
   }, []);
 
@@ -126,6 +175,20 @@ export default function Home() {
   const handlePointer = (event: PointerEvent<HTMLButtonElement>, index: number) => { event.preventDefault(); paint(index); };
   const currentColorDone = board.filter((v,i) => v === selected && v === target[i]).length;
   const currentColorTotal = target.filter(v => v === selected).length;
+  const showPoster = (kind: "print" | "work") => {
+    const src = makePoster(pattern, kind);
+    if (src) setPoster({ src, kind, filename: `米粒拼豆-${pattern.name}-${kind === "print" ? "高清图纸" : "作品卡"}.png` });
+  };
+  const downloadPoster = () => {
+    if (!poster) return;
+    const link = document.createElement("a"); link.href = poster.src; link.download = poster.filename; link.click();
+  };
+  const printPoster = () => {
+    if (!poster) return;
+    const page = window.open("", "_blank"); if (!page) return;
+    const image = page.document.createElement("img"); image.src = poster.src; image.style.width = "100%";
+    page.document.body.style.margin = "0"; page.document.body.appendChild(image); image.onload = () => page.print();
+  };
 
   return <main>
     <div className="app">
@@ -146,16 +209,17 @@ export default function Home() {
       {tab === "game" && <section className="game-screen">
         <header className="game-header"><button onClick={()=>setTab("library")}>‹</button><div><b>{pattern.name}</b><small>{done}/{total} 颗 · 错误 {mistakes}</small></div><button onClick={()=>setHint(v=>!v)}>{hint?"关提示":"开提示"}</button></header>
         <div className="game-progress"><i style={{width:`${progress}%`}} /><b>{progress}%</b></div>
-        <div className="reference"><div><span>完整图纸</span><button onClick={()=>gameRef.current?.scrollIntoView({behavior:"smooth"})}>开始拼 ↓</button></div><Art pattern={pattern} /></div>
+        <div className="reference"><div><span>完整图纸</span><aside><button onClick={()=>showPoster("print")}>生成打印图</button><button onClick={()=>gameRef.current?.scrollIntoView({behavior:"smooth"})}>开始拼 ↓</button></aside></div><Art pattern={pattern} /></div>
         <div className="color-goal"><i style={{background:pattern.palette[selected].color}}/><p><b>现在拼：{pattern.palette[selected].name}</b><small>{currentColorDone}/{currentColorTotal} 颗 · {hint?"闪烁位置就是目标":"提示已关闭"}</small></p></div>
         <div className="play-board" ref={gameRef} onPointerLeave={()=>setDrawing(false)}><div className="touch-grid" style={{"--cols":pattern.rows[0].length} as React.CSSProperties}>{target.map((cell,i)=><button key={i} aria-label={`第${i+1}格`} className={`${cell==="."?"outside":""} ${board[i]!=="."?"placed":""} ${hint&&cell===selected&&board[i]==="."?"target-hint":""}`} style={board[i]!=="."?{background:pattern.palette[board[i]].color}:undefined} onPointerDown={e=>{setDrawing(true);handlePointer(e,i)}} onPointerEnter={e=>{if(drawing)handlePointer(e,i)}} onPointerUp={()=>setDrawing(false)} />)}</div>{message&&<div className="bubble">{message}</div>}</div>
         <div className="palette"><div className="palette-head"><b>选择豆子颜色</b><button onClick={()=>{const empty=Array(target.length).fill(".");setBoard(empty);setSavedBoards(all=>({...all,[pattern.id]:empty}))}}>重新开始</button></div><div>{keys(pattern).map(k=>{const count=target.filter(v=>v===k).length;const placed=board.filter(v=>v===k).length;return <button key={k} className={selected===k?"active":""} onClick={()=>setSelected(k)}><i style={{background:pattern.palette[k].color}}/><span>{pattern.palette[k].name}<small>{placed}/{count}</small></span>{placed===count&&<em>✓</em>}</button>})}</div></div>
-        {celebrate&&<div className="finish-sheet"><div className="confetti">✦ · ● · ✦</div><Art pattern={pattern}/><h2>完成啦，米粒！</h2><p>{pattern.story}</p><div><button onClick={()=>setTab("works")}>放进作品册</button><button onClick={()=>setCelebrate(false)}>再看看作品</button></div></div>}
+        {celebrate&&<div className="finish-sheet"><div className="sparkles">{Array.from({length:10},(_,i)=><i key={i}>✦</i>)}</div><div className="confetti">✦ · ● · ✦</div><Art pattern={pattern}/><h2>完成啦，米粒！</h2><p>{pattern.story}</p><div><button onClick={()=>showPoster("work")}>生成作品卡</button><button onClick={()=>setTab("works")}>放进作品册</button><button onClick={()=>setCelebrate(false)}>再看看</button></div></div>}
       </section>}
 
       {tab === "works" && <section className="works"><div className="page-head"><small>米粒的作品册</small><h1>{completed.length} 个闪亮作品</h1><p>每完成一幅，都会永久收藏在这台手机里。</p></div>{completed.length?<div className="work-grid">{PATTERNS.filter(p=>completed.includes(p.id)).map(p=><button key={p.id} onClick={()=>openGame(p.id)}><Art pattern={p}/><b>{p.name}</b><small>完成 · 点击再玩</small></button>)}</div>:<div className="no-works"><span>✦</span><h2>第一颗星星还在等你</h2><p>完成一张图纸，它就会出现在这里。</p><button onClick={()=>openGame("astro-cat")}>去完成第一幅</button></div>}</section>}
 
       {tab !== "game" && <nav className="nav"><button className={tab==="home"?"active":""} onClick={()=>setTab("home")}><span>⌂</span>首页</button><button className={tab==="library"?"active":""} onClick={()=>setTab("library")}><span>▦</span>图纸</button><button className="play" onClick={()=>openGame(PATTERNS.find(p=>!completed.includes(p.id))?.id??PATTERNS[0].id)}><span>▶</span>开拼</button><button className={tab==="works"?"active":""} onClick={()=>setTab("works")}><span>★</span>作品</button></nav>}
+      {poster && <div className="poster-sheet"><section><button className="poster-close" onClick={()=>setPoster(null)} aria-label="关闭">×</button><small>{poster.kind === "print" ? "高清可打印图纸" : "米粒的作品卡"}</small><img src={poster.src} alt={`${pattern.name}拼豆${poster.kind === "print" ? "图纸" : "作品卡"}`} /><div><button onClick={downloadPoster}>保存高清图</button><button onClick={printPoster}>打印</button></div><p>手机上也可长按图片保存</p></section></div>}
     </div>
   </main>;
 }

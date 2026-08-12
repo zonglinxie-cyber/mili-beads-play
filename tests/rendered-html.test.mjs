@@ -42,6 +42,9 @@ test("ships a real playable pattern catalog", async () => {
   assert.match(source, /onPointerDown/);
   assert.match(source, /setSavedBoards/);
   assert.match(source, /finish-sheet/);
+  assert.match(source, /makePoster/);
+  assert.match(source, /生成打印图/);
+  assert.match(source, /生成作品卡/);
 });
 
 test("provides a parent-facing privacy page", async () => {
