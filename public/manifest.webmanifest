@@ -1,0 +1,10 @@
+{
+  "name": "米粒拼豆社",
+  "short_name": "米粒拼豆",
+  "description": "给米粒的拼豆图纸与触控游戏",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fff9ed",
+  "theme_color": "#ec6f5d",
+  "icons": [{"src":"/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
