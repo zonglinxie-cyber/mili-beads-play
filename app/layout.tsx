@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -10,6 +10,13 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "米粒拼豆", statusBarStyle: "default" },
   openGraph: { title: "米粒拼豆社", description: "把小豆子拼成大冒险。", images: ["/og-v2.png"] },
   twitter: { card: "summary_large_image", title: "米粒拼豆社", description: "把小豆子拼成大冒险。", images: ["/og-v2.png"] },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#fff9ed",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

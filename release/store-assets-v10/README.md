@@ -1,11 +1,11 @@
-# 最终上架素材 v10 · 品牌 v2 更新
+# 上架候选素材 v10 · 网格品牌 v5 验证候选
 
-本目录包含 Google Play 候选素材与 App Store 构图草案。截图来自 Web 生产构建，完成/动画/打印状态通过与 E2E 相同的 170 颗真实点击路径生成。品牌图标使用经多尺寸盲测选择的 v4 猫头像；来源与筛选证据见 `../brand-v2/README.md`。
+本目录包含 Google Play 候选素材与 App Store 构图草案。截图来自 Web 生产构建，完成/动画/打印状态通过与 E2E 相同的真实点击路径生成。当前品牌图标候选已替换为从 18×18 `scarf-sprint` JSON 坐标确定性生成的网格猫，来源、哈希、预览与证据边界见 `../brand-v5-integration/README.md`。独立红队只给出 **Go-to-validate / No-Go-to-ship**：这里的尺寸与遮罩板是工程预览，不是已完成的儿童盲测、实物熟烫或真机 Launcher 证据。
 
 ## 已生成
 
 - `google-play-feature-graphic-1024x500.png`：Google Play 功能宣传图，1024×500、RGB、无 Alpha。
-- `google-play-icon-512.png`：品牌 v2 的独立 32-bit RGBA 上架版，512×512、Alpha 通道全为 255、低于 1 MB；源图本身已是满幅紫色背景，没有烘焙黑角，适配 Play 动态圆角。
+- `google-play-icon-512.png`：网格品牌 v5 验证候选的独立 32-bit RGBA 文件，512×512、Alpha 通道全为 255、低于 1 MB；源图本身已是满幅品牌背景，没有烘焙圆角或黑角，供 Play 动态遮罩验证。
 - `google-play-phone-01..05-1080x2160.png`：首页、9 区放大拼制、完成庆祝、三层动画、1200×1500 打印图预览；均为 1080×2160、RGB、无 Alpha。
 - `app-store-iphone69-web-composite-01..05-1320x2868.png`：同一组五种状态，符合 iPhone 6.9 英寸 1320×2868 文件规格。**这些只是布局草案，不是真机截图，禁止直接提交 App Store。**
 - `print-source-rocket-cat-1200x1500.png`：网页实际生成的高清打印源图，浏览器 natural size 已断言为 1200×1500。

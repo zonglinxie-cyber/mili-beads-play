@@ -15,7 +15,7 @@
     "assets:native": "node scripts/generate-native-brand-assets.mjs",
     "assets:native:check": "node scripts/generate-native-brand-assets.mjs --check",
     "native:sync": "cap sync",
-    "native:build": "vite build --config vite.native.config.ts && cap sync",
+    "native:build": "node scripts/sync-native-pwa.mjs && vite build --config vite.native.config.ts && cap sync",
     "native:ios": "cap open ios",
     "native:android": "cap open android"
   },

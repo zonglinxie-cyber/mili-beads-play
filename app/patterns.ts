@@ -1,52 +1,279 @@
+import type { DifficultyAxes } from "./pattern-metadata";
+
 export type BeadColor = { name: string; color: string };
+export type PatternColorway = { id: string; name: string; palette: Record<string, BeadColor> };
+export type PatternProvenance = {
+  creationDate: string;
+  method: string;
+  referenceBoundary: string;
+  authoringDisclosure: string;
+  rightsReview: string;
+  revision: string;
+  gridHash: string;
+  sourceHash: string;
+};
 
 export type Pattern = {
   id: string;
   name: string;
   story: string;
-  level: "轻松" | "进阶" | "挑战";
   category: string;
-  minutes: number;
   motion: "launch" | "float" | "twist" | "sway" | "hop" | "drum" | "bounce" | "roll" | "glide";
   animation: string;
   motionPlan: { body: string; prop: string; fx: string };
   pieceLabel: string;
   pieceSizes: number[];
+  skillTip: string;
+  estimatedMinutes: [number, number];
+  difficultyAxes: DifficultyAxes;
+  difficultyLabel: string;
+  difficultyWhy: string;
+  playIdea: string;
+  assemblyNotes: string[];
+  childFinishLine: string;
+  reserveByColor: Record<string, number>;
   palette: Record<string, BeadColor>;
+  colorways: PatternColorway[];
   rows: string[];
   layers: string[];
+  provenance?: PatternProvenance;
 };
 
-export const P = {
-  K: { name: "墨黑", color: "#29283b" }, W: { name: "奶油白", color: "#fff5df" },
-  O: { name: "蜜橘", color: "#ee7b52" }, Y: { name: "星光黄", color: "#f5c95d" },
-  P: { name: "樱花粉", color: "#ef91a7" }, R: { name: "莓果红", color: "#cf4e61" },
-  B: { name: "湖水蓝", color: "#5daabe" }, N: { name: "深海蓝", color: "#355276" },
-  G: { name: "叶子绿", color: "#6ba270" }, L: { name: "嫩芽绿", color: "#a8ca79" },
-  C: { name: "可可棕", color: "#8a5d4a" }, T: { name: "焦糖", color: "#c58a5b" },
-  V: { name: "葡萄紫", color: "#775f9c" }, S: { name: "浅紫", color: "#b7a0d2" },
-};
-
+const color = (name: string, hex: string): BeadColor => ({ name, color: hex.toLowerCase() });
+const way = (id: string, name: string, palette: Record<string, BeadColor>): PatternColorway => ({ id, name, palette });
 const rows18 = (lines: string[]) => lines.map(line => {
   const row = line.replaceAll(" ", ".");
   if (row.length > 18) throw new Error(`图纸超过 18 格：${line}`);
   return row.padEnd(18, ".");
 });
 
-export const PATTERNS: Pattern[] = [
-  { id:"rocket-cat", name:"火箭背包橘猫", story:"橘猫伸爪追星，背包尾焰拖出大弧线。", level:"进阶", category:"冒险", minutes:48, motion:"launch", animation:"橘猫伸爪向上飞；火箭背包和粗尾焰呼吸喷射；右上星星连续闪烁", motionPlan:{"body":"橘猫伸爪向上飞","prop":"火箭背包和粗尾焰呼吸喷射","fx":"右上星星连续闪烁"}, pieceLabel:"2件场景套装", pieceSizes:[166,4], palette:{K:P.K,W:P.W,O:P.O,Y:P.Y,R:P.R,N:P.N}, layers:rows18(["...............F..","........B...B.FFF.",".......BBB.BBB....","......BBBBBBBBB...",".....BBBBBBBBBB...",".....BBBBBBBBBB...","..PPPPPPBBBBBBB...",".PPPPPPPBBBBBBB...",".PPPPPPPBBBBBBB...","PPPPPPPPBBBBBBBB..","PPPPPPPPBBBBBBBB..",".PPPPPPPBBBBBBB...",".PPPPPPPBBBBBB....","PPPPPP.PB..BB.....",".PPPPPPP..BB......","..PPPPP...........","...PPP............","....PP............"]), rows:rows18(["...............Y..","........K...K.YYY.",".......KOK.KOK....","......KOOOOOOOK...",".....KOWOOKWOOK...",".....KOOOWOOOOK...","..RRRKOOOOOOOOK...",".RNNRKOOOOOOKKK...",".RNNRROOOWOOOKK...","RRNNRROOOWWWOOOK..","RNNNRROOOWWWOOOK..",".RRRRRKOOOWOOOK...",".RYYRRKKOOOOKK....","RYYYYR.KK..KK.....",".RYYYRKK..KK......","..RYRRR...........","...RYR............","....RR............"]) },
-  { id:"cloud-otter", name:"云朵冲浪水獭", story:"水獭一手撑伞，踩着云浪侧身滑行。", level:"挑战", category:"奇想", minutes:48, motion:"glide", animation:"水獭左右调整平衡；伞面跟随风向倾斜；脚下云浪分层起伏", motionPlan:{"body":"水獭左右调整平衡","prop":"伞面跟随风向倾斜","fx":"脚下云浪分层起伏"}, pieceLabel:"一体成品", pieceSizes:[170], palette:{K:P.K,W:P.W,C:P.C,T:P.T,B:P.B,N:P.N}, layers:rows18(["......PPPPP.......","....PPPPPPPPP.....","...PPPPPPPPPPP....","...PPPPPPPPPPP....",".......PPP........",".......PPP........","......BBBBB.......",".....BBBBBBB......","....BBBBBBBBB.....","....BBBBBBBBB.....","....BBBBBBBB......","..PPPPBBBBBBB.....",".PPPPPBBBBBB.PP...","PPPPPPBBBBBBBPPP..",".PPPPPB.BBBBBPPP..",".FFFFFFFFFFFFF....","FFFFFFFFFFFFFF....","..FFFFFFFF.F......"]), rows:rows18(["......NNNNN.......","....NNBBBBBNN.....","...NBBBBBBBBBN....","...NNNNNNNNNNN....",".......CCC........",".......CCC........","......CCCCC.......",".....CTTTTTC......","....CTTKTTKTC.....","....CTTTWTTTC.....","....CTTTTTTC......","..CCCCCTWWWTC.....",".CCTTCCWWWTC.CC...","CCTTTTCTTTTCTTCC..",".CCTTTT.TTTCCTTC..",".WWWWWWWWWWWWW....","WWWWBBBBBBWWWW....","..WBBBBBBB.W......"]) },
-  { id:"star-dragon", name:"追星小青龙", story:"小青龙盘成S弯，伸爪去接掉落的星星。", level:"进阶", category:"国风", minutes:42, motion:"twist", animation:"青龙沿S形身体盘旋；龙角与鬃毛轻摆；星星落向伸出的前爪", motionPlan:{"body":"青龙沿S形身体盘旋","prop":"龙角与鬃毛轻摆","fx":"星星落向伸出的前爪"}, pieceLabel:"2件场景套装", pieceSizes:[128,5], palette:{K:P.K,W:P.W,O:P.O,Y:P.Y,G:P.G,L:P.L}, layers:rows18(["...........PPPP...","..........PPP...F.","..........PPP..FFF",".......PBBBBBB..F.","......BBBBBBBBB...","......BBBBBBBBBB..",".....BBBBBBBPBB...","....BBBBBBBBBB....","...BBBBBBBBBB.....","..BBBB..BBBB......",".BBBB...BBB.......","BBB....BBBB.......","BBB...BBBBB.......","BBB..BBBBB........","BBBBBBBBB.........",".BBBBBBB..........","..BBBBB...........","...BBB............"]), rows:rows18(["...........OOOO...","..........OOO...Y.","..........OOO..YYY",".......OGGGGGG..Y.","......GGGKLGGGG...","......GLLLLGGGGG..",".....GGGWGGGOGG...","....GGGWWWGGGG....","...GGGGWWWGGG.....","..GGGG..WGGG......",".GGGG...WGG.......","GGG....WWGG.......","GGG...WWGGG.......","GGG..WWGGG........","GGGGWWGGG.........",".GGGGGGG..........","..GGGGG...........","...GGG............"]) },
-  { id:"bottle-jelly", name:"瓶中发光水母", story:"摇一摇玻璃瓶，水母把海底星光点亮。", level:"进阶", category:"海洋", minutes:45, motion:"sway", animation:"瓶身轻轻晃动；水母伞盖呼吸发光、触手错拍摆动；两颗瓶中星光依次闪烁", motionPlan:{"body":"瓶身轻轻晃动","prop":"水母伞盖呼吸发光、触手错拍摆动","fx":"两颗瓶中星光依次闪烁"}, pieceLabel:"一体成品", pieceSizes:[170], palette:{N:P.N,W:P.W,B:P.B,V:P.V,P:P.P,Y:P.Y}, layers:rows18([".......BBBB.......","......BBBBBB......","......BBBBBB......",".....BBBBBBBB.....","....BBBBBBBBBB....","...BBBFBBBBFBBB...","...BBBPPPPPPBBB...","...BBBPPPPPPBBB...","...BBBPPPPPPBBB...","...BBBPPPPPPBBB...","...BBBBBPPBBBBB...","...BBBBPBBPBBBB...","...BBBPBPBPBBBB...","...BBBPBPBPBBBB...","....BBBPBPBBBB....",".....BBBBBBBB.....","......BBBBBB......",".......BBBB......."]), rows:rows18([".......NNNN.......","......NWWWWN......","......NNNNNN......",".....NBBBBBBN.....","....NBBBBBBBBN....","...NBBYBBBBYBBN...","...NBBVVVVVVBBN...","...NBBVPPPPVBBN...","...NBBVPNNPVBBN...","...NBBVVPPVVBBN...","...NBBBBPPBBBBN...","...NBBBPBBPBBBN...","...NBBPBPBPBBBN...","...NBBPBPBPBBBN...","....NBBPBPBBBN....",".....NBBBBBBN.....","......NNNNNN......",".......NNNN......."]) },
-  { id:"frog-post", name:"青蛙邮差跳水坑", story:"青蛙抱紧邮包腾空，两封信在手边展开。", level:"进阶", category:"冒险", minutes:45, motion:"hop", animation:"青蛙收腿跃过水面；邮包和两封信错拍晃动；左右水花同时飞溅", motionPlan:{"body":"青蛙收腿跃过水面","prop":"邮包和两封信错拍晃动","fx":"左右水花同时飞溅"}, pieceLabel:"3件场景套装", pieceSizes:[142,4,4], palette:{K:P.K,W:P.W,G:P.G,L:P.L,B:P.B,N:P.N}, layers:rows18([".......PPPP.......","......PPPPPP......",".....BBBBBBBB.....","....BBBBBBBBBB....","....BBBBBBBBBB....",".....BBBBBBBB.....","...PBBBBBBBBBBP...","..PPPBBPPBBBPPP...","..PPPBBPPPPBBPPP..","....BBPPPPBB......",".....BPPPPBB......","....BBBBBBBB......","..BBBBB..BBBBB....",".BBBBB....BBBBB...",".BBBB......BBBB...",".BBB........BBB...",".....F....F.......","....FFF..FFF......"]), rows:rows18([".......NNNN.......","......NNNNNN......",".....GGGGGGGG.....","....GWKGKGWGGG....","....GGGGGGGGGG....",".....GLLWLLGG.....","...WWGGGGGGGGWW...","..WNNGGNNGGGNNW...","..WNNGGNNNNGGNNW..","....GGNNNNGG......",".....GNNNNGG......","....GGGLLGGG......","..GGGLL..LLGGG....",".GGGLL....LLGGG...",".GGGG......GGGG...",".GGG........GGG...",".....B....B.......","....BBB..BBB......"]) },
-  { id:"lion-poles", name:"醒狮飞越梅花桩", story:"锣鼓一响，小醒狮腾空咬住最高的红包。", level:"挑战", category:"国风", minutes:50, motion:"drum", animation:"醒狮眨眼、昂头、四肢收放；三根梅花桩依次亮起；无独立特效散件，避免小零件", motionPlan:{"body":"醒狮眨眼、昂头、四肢收放","prop":"三根梅花桩依次亮起","fx":"无独立特效散件，避免小零件"}, pieceLabel:"4件场景套装", pieceSizes:[130,8,8,8], palette:{K:P.K,W:P.W,Y:P.Y,O:P.O,R:P.R,G:P.G}, layers:rows18(["......BBBB........","....BBBBBBBB......","...BBBBBBBBBB.....","..BBBBBBBBBBBB....","..BBBBBBBBBBBB....","...BBBBBBBBBB.....","....BBBBBBBB......",".....BBBBBB.......","...BBBBBBBBBB.....","..BBBBBBBBBBBB....",".BBBBBBBBBBBBBB...",".BBBBB....BBBBB...","..BBBB....BBBB....","...BBB....BBB.....","PPP....PPP....PPP.","PPP....PPP....PPP.",".P......P......P..",".P......P......P.."]), rows:rows18(["......RRRR........","....RRYYYYRR......","...RRWWYYWWRR.....","..RWWKWWWWKWWR....","..RWWWWOOWWWWR....","...RRYWWWWYRR.....","....YYRRRRYY......",".....OOOOOO.......","...OOOOWWOOOO.....","..ROOOKOOKOOOR....",".RROOOOOOOOOORR...",".RRROO....OORRR...","..RROO....OORR....","...RRR....RRR.....","YYY....YYY....YYY.","GGG....GGG....GGG.",".G......G......G..",".G......G......G.."]) },
-  { id:"moon-rabbit", name:"月兔投递星星", story:"月兔坐在弯月邮袋里，把一颗星星抛向夜空。", level:"挑战", category:"童话", minutes:50, motion:"bounce", animation:"月兔在邮袋里轻跳；弯月邮袋左右摇晃；星星沿弧线升向夜空", motionPlan:{"body":"月兔在邮袋里轻跳","prop":"弯月邮袋左右摇晃","fx":"星星沿弧线升向夜空"}, pieceLabel:"2件场景套装", pieceSizes:[163,5], palette:{K:P.K,W:P.W,P:P.P,Y:P.Y,B:P.B,N:P.N}, layers:rows18([".....BB....BB.....","....BBBB..BBBB....","....BBBB..BBBB....","....BBBBBBBBBB....",".....BBBBBBBB.....","....BBBBBBBBBB....","....BBBBBBBBBB....",".....BBBBBBBB...F.","......BBBBBB...FFF","...PPPPBBBBBB...F.","..PPPPPBBBBBB.....","..PPPPPBBBBPPB....","..PPPPBBBBBPPB....","..PPPPBBBBBBPPB...","...PPPBBBBBBPPB...","....PPPPPPPPPPB...",".....PPPPPPBB.....",".......PP........."]), rows:rows18([".....NN....NN.....","....NWWN..NWWN....","....NWPW..NWPW....","....NWWWNNWWWN....",".....NWWWWWWN.....","....NWWKWWKWWN....","....NWWWPWWWWN....",".....NWWWWWWN...Y.","......NNWWNN...YYY","...YYYYNNWWNN...Y.","..YYYYYNWWNNN.....","..YYYYYNWWNBBN....","..YYYYNNWWNBBN....","..YYYYNNWWNNBBN...","...YYYNNWWNNBBN...","....YYYYYYYYBBN...",".....YYYYYYNN.....",".......YY........."]) },
-  { id:"sushi-train", name:"寿司列车猫店长", story:"猫店长一挥爪，今日特供就沿着小铁轨出发。", level:"挑战", category:"美食", minutes:48, motion:"roll", animation:"猫店长挥爪，列车车轮循环滚动；两盘寿司轻轻弹跳；无独立特效散件，整车一体更耐用", motionPlan:{"body":"猫店长挥爪，列车车轮循环滚动","prop":"两盘寿司轻轻弹跳","fx":"无独立特效散件，整车一体更耐用"}, pieceLabel:"一体成品", pieceSizes:[165], palette:{K:P.K,W:P.W,O:P.O,R:P.R,G:P.G,N:P.N}, layers:rows18(["...B......B.......","..BBB....BBB......","..BBBBBBBBBB......","..BBBBBBBBBB......","..BBBBBBBBBB......","..BBBBBBBBBB......","...BBBBBBBB.......","....BBBBBB........","..BBBBBBBBBBBBBB..","..BBBBBB.PPPPPPB..",".BBBBBB.PPPPPPPB..",".BBBBBB.PPPPPPPB..","..BBBBBBBBBBBBBB..","...BBBBBBBBBBBB...","...BBB......BBB...","..BBBBB....BBBBB..","...BBB......BBB...",".................."]), rows:rows18(["...K......K.......","..KOK....KOK......","..KOWKKKKWOK......","..KOWWWWWWOK......","..KWKWWWWKWK......","..KWWOOWWWWK......","...KWWWWWWK.......","....KKWWKK........","..NNNNNNNNNNNNNN..","..NNWWNN.WRRWGGN..",".NNWONN.WRRWGGGN..",".NNNNNN.WWWWGGGN..","..NNNNNNNNNNNNNN..","...NNNNNNNNNNNN...","...KKK......KKK...","..KNNNK....KNNNK..","...KKK......KKK...",".................."]) },
-  { id:"icecream-rocket", name:"冰淇淋火箭起飞", story:"草莓味燃料装满，下一站是甜甜星。", level:"进阶", category:"奇想", minutes:38, motion:"launch", animation:"冰淇淋火箭左右校准后上升；蓝色舷窗闪出表情；粗尾焰伸缩，右上甜甜星闪烁", motionPlan:{"body":"冰淇淋火箭左右校准后上升","prop":"蓝色舷窗闪出表情","fx":"粗尾焰伸缩，右上甜甜星闪烁"}, pieceLabel:"2件场景套装", pieceSizes:[115,5], palette:{W:P.W,P:P.P,R:P.R,B:P.B,Y:P.Y,C:P.C}, layers:rows18(["..............F...",".............FFF..",".....BBBBBB...F...",".....BBBBBB.......","....BBBBBBBB......","....BBBBBBBB......",".....BBBBBB.......",".....BBBBBB.......",".....BBBBBBB......","...BBBBPPPBBBB....","..BBBBBPPPBBBBB...","..BBBBBBBBBBBBB...","...BB.BBBBB.BB....","......BBBBB.......",".......FFF........","......FFFF........",".....FFFFFF.......","......FFFF........"]), rows:rows18(["..............Y...",".............YYY..",".....WWWWWW...Y...",".....WPPPPW.......","....WPPPPPPW......","....WPRPPRPW......",".....WPPPPW.......",".....WWWWWW.......",".....CCCCCCC......","...RRCCBBBCCRR....","..RRRCCBYBCCRRR...","..RRRCCCCCCCRRR...","...RR.CCCCC.RR....","......CCCCC.......",".......YYY........","......YRRY........",".....YRRRRY.......","......RRRR........"]) },
-  { id:"rainbow-duck", name:"滑板鸭飞越彩虹", story:"压低身体，鸭鸭从彩虹坡顶起跳。", level:"轻松", category:"运动", minutes:32, motion:"glide", animation:"鸭子压低、伸翅、抬头；滑板翻半圈，彩虹坡依次亮色；无小散件，以轮子转动表现速度", motionPlan:{"body":"鸭子压低、伸翅、抬头","prop":"滑板翻半圈，彩虹坡依次亮色","fx":"无小散件，以轮子转动表现速度"}, pieceLabel:"2件场景套装", pieceSizes:[84,43], palette:{K:P.K,Y:P.Y,O:P.O,B:P.B,R:P.R,G:P.G}, layers:rows18(["......BBB.........","....BBBBBB........","...BBBBBBB........","..BBBBBBBBB.......","...BBBBBBBB.......","....BBBBBB........","...BBBBBBBB.......","....BBBBB.........",".....BB.BB........","..PPPPPPPPPPP.....","..PPPPPPPPPPP.....","...PPP...PPP......","..................","..........PPPPP...","........PPPPPP....","......PPPPPPPP....","...PPPPPPPPPPP....","PPPPPPPPPPPPP....."]), rows:rows18(["......BBB.........","....BBYYYY........","...BYYKYYY........","..BYYYYYOYY.......","...YYYOOOYY.......","....YYYYYY........","...BBYYYYBB.......","....YYYYY.........",".....YY.YY........","..GGGGGGGGGGG.....","..GGGGGGGGGGG.....","...KKK...KKK......","..................","..........RRRRR...","........RROOOO....","......RROOYYYY....","...RROOYYGGGGG....","RROOYYGGBBBBB....."]) },
-  { id:"whale-castle", name:"鲸鱼驮着星星城", story:"鲸鱼一喷水，背上的星星城就亮起一层。", level:"挑战", category:"奇想", minutes:52, motion:"float", animation:"鲸鱼尾鳍摆动、白肚皮上下呼吸；三座塔的黄窗从左到右点亮；右上水花展开再落回", motionPlan:{"body":"鲸鱼尾鳍摆动、白肚皮上下呼吸","prop":"三座塔的黄窗从左到右点亮","fx":"右上水花展开再落回"}, pieceLabel:"2件场景套装", pieceSizes:[164,6], palette:{K:P.K,W:P.W,Y:P.Y,B:P.B,N:P.N,V:P.V}, layers:rows18(["....P...P...P.....","...PPP.PPP.PPP....","...PPP.PPP.PPP....","...PPPPPPPPPPP....","....PPPPPPPPP.....","....PPPPPPPPP.....",".....PPPPPPP...FFF","......PPPPP...FFF.","..BBBBBBBBBBB.....",".BBBBBBBBBBBBBBBB.",".BBBBBBBBBBBBBBBB.",".BBBBBBBBBBBBBBB..","...BBBBBBBBBBBBBBB","....BBBBBBBBBBBBB.",".....BBBBBBBBBB...",".......BBBBBB.....","..................",".................."]), rows:rows18(["....V...V...V.....","...VVV.VVV.VVV....","...VYV.VYV.VYV....","...VVVVVVVVVVV....","....VVYVVYVVV.....","....VVVVVVVVV.....",".....NNNNNNN...BBB","......NNNNN...BBB.","..NNNBBBBBBBN.....",".NNBBBBBBBBBBBBBN.",".NBBBBBBBBBBBBBBN.",".NNBBBBBBBBBBKBN..","...NBBBBBWWBBBBBBN","....NBBBWWWWBBBBN.",".....NNWWWWBBNN...",".......NNNNNN.....","..................",".................."]) },
-  { id:"lantern-fox", name:"三尾狐提灯夜游", story:"三尾狐跃过月色，前爪提着一盏发光灯笼。", level:"挑战", category:"国风", minutes:52, motion:"sway", animation:"三尾狐轻盈跃起；前爪灯笼来回摆动；灯光由暗到明呼吸", motionPlan:{"body":"三尾狐轻盈跃起","prop":"前爪灯笼来回摆动","fx":"灯光由暗到明呼吸"}, pieceLabel:"一体成品", pieceSizes:[170], palette:{K:P.K,W:P.W,O:P.O,Y:P.Y,R:P.R}, layers:rows18([".....B.....B......","....BBB...BBB.....","...BBBBBBBBBBB....","...BBBBBBBBBBBB...","...BBBBBBBBBBBB...","....BBBBBBBBB.....",".....BBBBBBB......","....PPBBBBBBBB....","...PPPBBBBBBBB....","..PPPPBBBBBBBB....","..PFFPBBBBBBBB....",".PFFFPBBBBBBBB....","PFFFFPBBBBBBBB....",".PFFFPBBBBBBBB....","..PPPPBBBBBBBB....","...PP..BBBBBBBB...",".......BB.BB......",".................."]), rows:rows18([".....K.....K......","....KOK...KOK.....","...KOOOOOOOOOK....","...KOWKOOOKWOOK...","...KOOOOOWOOOOK...","....KOOOOOOOK.....",".....KOOOOOK......","....RKOOOOKROO....","...RROOOOOROWW....","..RROOWOOOROOW....","..RYYROOOOROOO....",".KYYYROOOOROWW....","KYYYYROOOOROOW....",".KYYYROOOOROOO....","..RRRROOOOROWW....","...RR..KOOOKROW...",".......KK.KK......",".................."]) },
-];
+const scarfSprint: Pattern = {
+  id: "scarf-sprint",
+  name: "追风围巾猫",
+  story: "小猫迎着风探出脑袋，蓝黄围巾向右飞起。",
+  category: "品牌猫",
+  motion: "sway",
+  animation: "小猫轻轻探头；蓝黄围巾迎风摆动；几条风线从身后飘过",
+  motionPlan: { body: "整体轻微探头", prop: "右侧围巾小幅摆动", fx: "舞台风线从左向右掠过" },
+  pieceLabel: "一体成品",
+  pieceSizes: [153],
+  skillTip: "先拼两只尖耳和脸部轮廓，再沿下巴向右追踪围巾。",
+  estimatedMinutes: [30, 45],
+  difficultyAxes: { beads: 153, colorChanges: 99, pieces: 1, articulationPoints: 0, symmetry: 100, repetition: 177 },
+  difficultyLabel: "表情与动势",
+  difficultyWhy: "153 颗、6 色；猫脸需对齐眼鼻，围巾则需追踪向右的连续色块。",
+  playIdea: "完成后在小舞台让围巾摆动，给猫选一条追风路线。",
+  assemblyNotes: ["猫脸、颈圈和向右伸出的围巾连成一个主件。", "摆放时让两只尖耳朝上，蓝黄围巾朝右。"],
+  childFinishLine: "拼好后请大人帮忙",
+  reserveByColor: { K: 4, O: 7, W: 2, P: 2, B: 4, Y: 2 },
+  palette: {
+    K: color("墨黑", "#29283b"), O: color("蜜橘", "#ee7b52"), W: color("奶油白", "#fff5df"),
+    P: color("樱花粉", "#ef91a7"), B: color("湖水蓝", "#5daabe"), Y: color("星光黄", "#f5c95d"),
+  },
+  colorways: [
+    way("orange-sky", "蜜橘飞行队", { K:color("墨黑","#29283b"), O:color("蜜橘","#ee7b52"), W:color("奶油白","#fff5df"), P:color("樱花粉","#ef91a7"), B:color("湖水蓝","#5daabe"), Y:color("星光黄","#f5c95d") }),
+    way("grape-mint", "葡萄汽水队", { K:color("深海蓝","#2c355b"), O:color("薰衣草紫","#9a82cc"), W:color("奶油白","#fff5df"), P:color("珊瑚粉","#f28a9a"), B:color("薄荷绿","#78c9b2"), Y:color("柠檬黄","#f2d25b") }),
+    way("moon-coral", "月光珊瑚队", { K:color("炭黑","#30303a"), O:color("暖月灰","#b9b3ad"), W:color("雪白","#f8f7f2"), P:color("莓果粉","#d96a83"), B:color("珊瑚红","#e86f61"), Y:color("奶油黄","#f5cd76") }),
+  ],
+  rows: rows18(["..................","..................","....KKK....KKK....","...KOPOK..KOPOK...","...KOPOOKKOOPOK...","..KOOOOOOOOOOOOK..","..KOOOOOOOOOOOOK..","..KOOWOOOOWOOOOK..","..KOOKOOOOKOOOBBBB","..KOPOOWKWWOPBBBYY","...KOOOWKKWOBBBYYY","....KBBBBBBBBBBYYY",".....KBBBBBBBBBYYY",".....KKBBBBBBB....","..................","..................","..................",".................."]),
+  layers: rows18(["..................","..................","....BBB....BBB....","...BBFBB..BBFBB...","...BBFBBBBBBFBB...","..BBBBBBBBBBBBBB..","..BBBBBBBBBBBBBB..","..BBBFBBBBFBBBBB..","..BBBFBBBBFBBBPPPP","..BBFBBFFFFBFPPPPP","...BBBBFFFFBPPPPPP","....BPPPPPPPPPPPPP",".....BPPPPPPPPPPPP",".....BBPPPPPPP....","..................","..................","..................",".................."]),
+  provenance: {
+    creationDate: "2026-08-13", method: "从空白 18×18 网格开始逐格构图；用四邻域、割点、缩略图与剪影反复校验。",
+    referenceBoundary: "只使用‘迎风的猫和一体围巾’通用题材；未描摹或复制第三方图样、角色或标识。",
+    authoringDisclosure: "人工网格创作；生成式图片未参与轮廓或逐格配色。", rightsReview: "通用题材；发布前仍需责任主体完成权利台账签字。",
+    revision: "v5-r2", gridHash: "dfa203e47796a3a70787f3fcafd9512dcb53899aa75a5881ac6152c0647c7083", sourceHash: "f716dae973c8291046f78f10b51a5b587fa5d35a64ec89a5c201c4f6f3449cd8",
+  },
+};
+
+const balloonBear: Pattern = {
+  id:"balloon-bear", name:"热气球旅行小熊", story:"小熊坐进篮筐，跟着彩色热气球升上天空。", category:"童话", motion:"float",
+  animation:"小熊与篮筐轻摆；热气球缓慢上浮；色带从中间向外亮起", motionPlan:{body:"熊与篮筐轻摆",prop:"气球缓慢上浮",fx:"色带由中间向外依次亮起"}, pieceLabel:"一体成品", pieceSizes:[167],
+  skillTip:"先完成热气球的对称色带，再沿两条绳子向下找到小熊。", estimatedMinutes:[28,40], difficultyAxes:{beads:167,colorChanges:112,pieces:1,articulationPoints:0,symmetry:160,repetition:172}, difficultyLabel:"双绳追踪", difficultyWhy:"气球是重复色带，熊脸需要局部换色；两条连接路径可练习从上到下检查。", playIdea:"完成后让气球慢慢上浮，篮筐和熊轻轻错拍摆动。", assemblyNotes:["气球、两条绳、熊和篮筐连成一个主件。","摆放时气球在上，熊脸朝正面。"], childFinishLine:"拼好后请大人帮忙", reserveByColor:{K:3,C:4,Y:4,R:5,B:5,N:3},
+  palette:{K:color("夜空墨","#29283b"),C:color("可可棕","#8a5d4a"),Y:color("星光黄","#f5c95d"),R:color("莓果红","#cf4e61"),B:color("湖水蓝","#5daabe"),N:color("深海蓝","#355276")},
+  colorways:[
+    way("sunrise-trip","日出旅行",{K:color("夜空墨","#29283b"),C:color("可可棕","#8a5d4a"),Y:color("星光黄","#f5c95d"),R:color("莓果红","#cf4e61"),B:color("湖水蓝","#5daabe"),N:color("深海蓝","#355276")}),
+    way("berry-sky","莓果晴空",{K:color("深莓紫","#40324f"),C:color("蜜桃粉","#f4aa91"),Y:color("奶油白","#fff5df"),R:color("莓果红","#b73d63"),B:color("晴空蓝","#69b4d0"),N:color("深葡萄","#51416f")}),
+    way("forest-parade","森林巡游",{K:color("夜空墨","#29283b"),C:color("深栗棕","#6b4538"),Y:color("柠檬叶","#d6d765"),R:color("珊瑚橘","#ed826e"),B:color("冰川蓝","#bde3e2"),N:color("深青玉","#285e57")}),
+  ],
+  rows:rows18([".....RRRRRRRR.....","...RRYYYYYYYYRR...","..RYYYBBBBBBYYYR..",".RYYBBBBBBBBBBYYR.",".RYYBBBBBBBBBBYYR.","..RYYYBBBBBBYYYR..","...RRYYYYYYYYRR...",".....RRRRRRRR.....",".....C......C.....",".....CC....CC.....","......C....C......",".....KK....KK.....","....KCCK..KCCK....","....KCCKCCKCCK....","....KCKCCKCCK.....","....KCCCCCCCCK....","....NNNNNNNNNN....",".....NNNNNNNN....."]),
+  layers:rows18([".....PPPPPPPP.....","...PPPPPPPPPPPP...","..PPPPPPPPPPPPPP..",".PPPPPPPPPPPPPPPP.",".PPPPPPPPPPPPPPPP.","..PPPPPPPPPPPPPP..","...PPPPPPPPPPPP...",".....PPPPPPPP.....",".....P......P.....",".....PP....PP.....","......P....P......",".....BB....BB.....","....BBBB..BBBB....","....BBBBBBBBBB....","....BBBBBBBBB.....","....BBBBBBBBBB....","....BBBBBBBBBB....",".....BBBBBBBB....."]),
+  provenance:{creationDate:"2026-08-13",method:"从空白 18×18 网格开始人工逐格构图；用四邻域、割点、缩略图与剪影脚本反复校验。",referenceBoundary:"只使用‘熊乘坐热气球’这一通用题材；未描摹、像素化或复制第三方图样、角色或标识。",authoringDisclosure:"人工网格创作；生成式图片未参与轮廓或逐格配色。",rightsReview:"通用题材；发布前仍需责任主体完成权利台账签字。",revision:"v13-r2",gridHash:"f1a6bf31f358a6787ff3f95907258a801b16212e481ef62910d9bab6c29830ca",sourceHash:"d8bc7b99ae0714b91bc8237320d87492c01fd0d549885747d508fa82cae39f11"},
+};
+
+const moonRabbit: Pattern = {
+  id:"moon-rabbit",name:"月兔坐进星月邮袋",story:"月兔坐在弯月形邮袋里，露出长耳朵望向夜空。",category:"童话",motion:"bounce",animation:"双耳错拍弹起；弯月邮袋左右摆动；星光沿袋口移动",motionPlan:{body:"双耳错拍弹起",prop:"弯月邮袋左右摆动",fx:"袋口星光沿弧线移动"},pieceLabel:"一体成品",pieceSizes:[163],skillTip:"先拼兔子的双耳和脸，再沿左下的弯月外轮廓向右收口。",estimatedMinutes:[35,50],difficultyAxes:{beads:163,colorChanges:110,pieces:1,articulationPoints:0,symmetry:94,repetition:176},difficultyLabel:"内外轮廓",difficultyWhy:"兔脸与弯月口袋相互嵌套，需要区分内轮廓、外轮廓和袋口色带。",playIdea:"完成后让弯月邮袋轻轻摇摆，给月兔选一个送信的舞台。",assemblyNotes:["兔子与弯月邮袋连成一个主件。","摆放时长耳朝上，弯月从左下方托住兔子。"],childFinishLine:"拼好后请大人帮忙",reserveByColor:{N:5,W:6,Y:6,B:3},
+  palette:{N:color("深海蓝","#355276"),W:color("奶油白","#fff5df"),Y:color("星光黄","#f5c95d"),B:color("湖水蓝","#5daabe")},colorways:[
+    way("moon-mail","月夜邮袋",{N:color("深海蓝","#355276"),W:color("奶油白","#fff5df"),Y:color("星光黄","#f5c95d"),B:color("湖水蓝","#5daabe")}),
+    way("berry-moon","莓果月亮",{N:color("深莓紫","#4f315d"),W:color("雪花白","#fffdf7"),Y:color("莓果红","#b73d63"),B:color("薰衣草紫","#b7a0d2")}),
+    way("mint-crescent","薄荷弯月",{N:color("深青玉","#285e57"),W:color("奶油白","#fff5df"),Y:color("湖水蓝","#468ca6"),B:color("星光黄","#f5c95d")}),
+  ],
+  rows:rows18([".....NN....NN.....","....NWWN..NWWN....","....NWBW..NWBW....","....NWWWNNWWWN....",".....NWWWWWWN.....","....NWWBWWBWWN....","....NWWWBWWWWN....",".....NWWWWWWN.....","......NNWBNN......","...YYYYNNWWNN.....","..YYYYYNWWNNN.....","..YYYYYNWWNBBN....","..YYYYNNWWNBBN....","..YYYYNNWWNNBBN...","...YYYNNWWNNBBN...","....YYYYYYYYBBN...",".....YYYYYYNN.....",".......YY........."]),layers:rows18([".....BB....BB.....","....BBBB..BBBB....","....BBBB..BBBB....","....BBBBBBBBBB....",".....BBBBBBBB.....","....BBBBBBBBBB....","....BBBBBBBBBB....",".....BBBBBBBB.....","......BBBBBB......","...PPPPPPPPPP.....","..PPPPPPPPPPP.....","..PPPPPPPPPPPP....","..PPPPPPPPPPPP....","..PPPPPPPPPPPPP...","...PPPPPPPPPPPP...","....PPPPPPPPPPP...",".....PPPPPPPP.....",".......PP........."]),
+  provenance:{creationDate:"2026-08-13",method:"从空白 18×18 网格开始人工逐格构图；用四邻域、割点、缩略图与剪影脚本反复校验。",referenceBoundary:"只使用‘兔子坐在弯月形口袋中’这一通用题材；未描摹、像素化或复制第三方图样、角色或标识。",authoringDisclosure:"人工网格创作；生成式图片未参与轮廓或逐格配色。",rightsReview:"通用题材；发布前仍需责任主体完成权利台账签字。",revision:"v13-r2",gridHash:"0d75b55fceca27703f023825f31fd04a76fda247d8d829b1e16075aa05c7c417",sourceHash:"e890d258f65baf2adcb93df7ca0a545a35da1070b21957e1f0d78840d7be604d"},
+};
+
+const sushiTrain: Pattern = {
+  id:"sushi-train",name:"猫店长餐盒小火车",story:"猫店长一挥爪，彩色餐盒就沿着小火车出发。",category:"美食",motion:"roll",animation:"猫爪抬起招手；三组车轮循环滚动；车厢餐盒依次轻跳",motionPlan:{body:"猫爪抬起招手",prop:"三组车轮循环滚动",fx:"车厢餐盒依次轻跳"},pieceLabel:"一体成品",pieceSizes:[165],skillTip:"先拼车头的猫耳和脸，再沿深色底盘向右完成车厢与车轮。",estimatedMinutes:[35,50],difficultyAxes:{beads:165,colorChanges:120,pieces:1,articulationPoints:6,symmetry:86,repetition:160},difficultyLabel:"横带换色",difficultyWhy:"猫、车厢、餐盒和车轮分成清楚横带，颜色切换多但轮廓稳定。",playIdea:"完成后让小火车开过舞台，由猫店长送出今天的彩色餐盒。",assemblyNotes:["猫、车厢、餐盒和车轮连成一个主件。","摆放时车轮朝下，猫耳位于车头上方。"],childFinishLine:"拼好后请大人帮忙",reserveByColor:{K:4,W:4,O:3,G:3,N:6},
+  palette:{K:color("夜空墨","#29283b"),W:color("奶油白","#fff5df"),O:color("蜜橘","#ee7b52"),G:color("叶子绿","#6ba270"),N:color("深海蓝","#355276")},colorways:[
+    way("harbor-bento","港口餐车",{K:color("夜空墨","#29283b"),W:color("奶油白","#fff5df"),O:color("蜜橘","#ee7b52"),G:color("叶子绿","#6ba270"),N:color("深海蓝","#355276")}),
+    way("berry-express","莓果快车",{K:color("深莓紫","#40324f"),W:color("雪花白","#fffdf7"),O:color("珊瑚橘","#e86f61"),G:color("薰衣草紫","#b7a0d2"),N:color("深葡萄","#51416f")}),
+    way("mint-market","薄荷市集",{K:color("夜空墨","#29283b"),W:color("奶油白","#fff5df"),O:color("莓果红","#b73d63"),G:color("薄荷水晶","#aee4d5"),N:color("深青玉","#285e57")}),
+  ],
+  rows:rows18(["...K......K.......","..KOK....KOK......","..KOWKKKKWOK......","..KOWWWWWWOK......","..KWKWWWWKWK......","..KWWOOWWWWK......","...KWWWWWWK.......","....KKWWKK........","..NNNNNNNNNNNNNN..","..NNWWNN.WOOWGGN..",".NNWONN.WOOWGGGN..",".NNNNNN.WWWWGGGN..","..NNNNNNNNNNNNNN..","...NNNNNNNNNNNN...","...KKK......KKK...","..KNNNK....KNNNK..","...KKK......KKK...",".................."]),layers:rows18(["...B......B.......","..BBB....BBB......","..BBBBBBBBBB......","..BBBBBBBBBB......","..BBBBBBBBBB......","..BBBBBBBBBB......","...BBBBBBBB.......","....BBBBBB........","..PPPPPPPPPPPPPP..","..PPPPPP.PPPPPPP..",".PPPPPP.PPPPPPPP..",".PPPPPP.PPPPPPPP..","..PPPPPPPPPPPPPP..","...PPPPPPPPPPPP...","...PPP......PPP...","..PPPPP....PPPPP..","...PPP......PPP...",".................."]),
+  provenance:{creationDate:"2026-08-13",method:"从空白 18×18 网格开始人工逐格构图；用四邻域、割点、缩略图与剪影脚本反复校验。",referenceBoundary:"只使用‘猫店长驾驶运送餐盒的小火车’这一通用题材；未描摹、像素化或复制第三方图样、角色或标识。",authoringDisclosure:"人工网格创作；生成式图片未参与轮廓或逐格配色。",rightsReview:"通用题材；发布前仍需责任主体完成权利台账签字。",revision:"v13-r2",gridHash:"c84e3646985ce6136a914d9274e9f45f31e5b64527c4baf89e67540705f5c0dd",sourceHash:"8aa1359df085fee024db25dbe2a995b8aeeaf8ca94dd5fa314b0b6fae5d20c18"},
+};
+
+const whaleCastle: Pattern = {
+  id:"whale-castle",name:"鲸鱼驮着星星城",story:"鲸鱼摆动尾巴，背上的三座星星塔亮起窗户。",category:"奇想",motion:"float",animation:"鲸尾左右摆动；三座塔轻微错拍；蓝色窗格从左到右亮起",motionPlan:{body:"鲸尾左右摆动",prop:"三座塔轻微错拍",fx:"蓝色窗格从左到右亮起"},pieceLabel:"一体成品",pieceSizes:[165],skillTip:"先完成鲸鱼的大轮廓，再从中间向两侧对齐背上三座塔。",estimatedMinutes:[38,55],difficultyAxes:{beads:165,colorChanges:76,pieces:1,articulationPoints:4,symmetry:106,repetition:209},difficultyLabel:"大轮廓分层",difficultyWhy:"鲸身面积大且重复度高，三座塔带来上半区对位与颜色切换。",playIdea:"完成后让鲸尾左右摆动，三座塔的窗从左到右亮起。",assemblyNotes:["鲸鱼与背上的三座塔连成一个主件。","摆放时鲸头朝右，三座塔保持朝上。"],childFinishLine:"拼好后请大人帮忙",reserveByColor:{N:6,W:3,B:7,V:5},
+  palette:{N:color("深海蓝","#355276"),W:color("奶油白","#fff5df"),B:color("湖水蓝","#5daabe"),V:color("葡萄紫","#775f9c")},colorways:[
+    way("night-city","夜航星城",{N:color("深海蓝","#355276"),W:color("奶油白","#fff5df"),B:color("湖水蓝","#5daabe"),V:color("葡萄紫","#775f9c")}),
+    way("coral-city","珊瑚星城",{N:color("深莓紫","#4f315d"),W:color("雪花白","#fffdf7"),B:color("珊瑚橘","#e86f61"),V:color("深葡萄","#623a78")}),
+    way("mint-city","薄荷云城",{N:color("深青玉","#285e57"),W:color("奶油白","#fff5df"),B:color("晴空蓝","#69b4d0"),V:color("星光黄","#f5c95d")}),
+  ],
+  rows:rows18(["....V...V...V.....","...VVV.VVV.VVV....","...VBV.VBV.VBV....","...VVVVVVVVVVV....","....VVBVVBVVV.....","....VVVVVVVVV.....",".....NNNNNNN......","......NNNNN.......","..NNNBBBBBBBN.....",".NNBBBBBBBBBBBBBN.",".NBBBBBBBBBBBBBBN.",".NNBBBBBBBBBBBBBN.","...NBBBBBWWBBBBBBN","....NBBBWWWWBBBBN.",".....NNWWWWBBNN...",".......NNNNNN.....","..................",".................."]),layers:rows18(["....P...P...P.....","...PPP.PPP.PPP....","...PPP.PPP.PPP....","...PPPPPPPPPPP....","....PPPPPPPPP.....","....PPPPPPPPP.....",".....BBBBBBB......","......BBBBB.......","..BBBBBBBBBBB.....",".BBBBBBBBBBBBBBBB.",".BBBBBBBBBBBBBBBB.",".BBBBBBBBBBBBBBBB.","...BBBBBBBBBBBBBBB","....BBBBBBBBBBBBB.",".....BBBBBBBBBB...",".......BBBBBB.....","..................",".................."]),
+  provenance:{creationDate:"2026-08-13",method:"从空白 18×18 网格开始人工逐格构图；用四邻域、割点、缩略图与剪影脚本反复校验。",referenceBoundary:"只使用‘鲸鱼背负三塔星城’这一通用题材；未描摹、像素化或复制第三方图样、角色或标识。",authoringDisclosure:"人工网格创作；生成式图片未参与轮廓或逐格配色。",rightsReview:"通用题材；发布前仍需责任主体完成权利台账签字。",revision:"v13-r2",gridHash:"2ddffc2af200aed5e0d95ae5044907403c19ef6781c3a40fd06618147f892195",sourceHash:"6ec04c963c19a3792078b183f9a70b4fed050193ffa4bf451b8495c76da66c72"},
+};
+
+const foxKite: Pattern = {
+  id: "fox-kite", name: "小狐狸放飞鲸鱼风筝", story: "风一吹，小狐狸拉紧风筝线，鲸鱼风筝就游上了天空。", category: "奇想", motion: "launch",
+  animation: "狐狸后仰再站稳；鲸鱼风筝沿斜线摆动；风从左下向右上吹过", motionPlan: { body: "狐狸后仰再站稳", prop: "鲸鱼风筝沿斜线摆动", fx: "风从左下向右上吹过" },
+  pieceLabel: "一体成品", pieceSizes: [121], skillTip: "先拼左下狐狸的尖耳和脸，再沿黄色风筝线追到右上的鲸鱼风筝。",
+  estimatedMinutes: [30, 45], difficultyAxes: { beads: 121, colorChanges: 45, pieces: 1, articulationPoints: 4, symmetry: 14, repetition: 156 },
+  difficultyLabel: "斜线追踪", difficultyWhy: "狐狸、风筝线和鲸鱼风筝连成一个主件；斜线方向与两端大色块需要持续核对。",
+  playIdea: "完成后让狐狸先后仰再站稳，鲸鱼风筝沿右上方向摆动。",
+  assemblyNotes: ["狐狸、风筝线和鲸鱼风筝连成一个主件。", "摆放时狐狸在左下，鲸鱼风筝朝右上。"],
+  childFinishLine: "拼好后请大人帮忙", reserveByColor: { K: 5, O: 6, W: 4, B: 5, Y: 3 },
+  palette: { K: color("夜空墨", "#29283b"), O: color("蜜橘", "#ee7b52"), W: color("奶油白", "#fff5df"), B: color("湖水蓝", "#5daabe"), Y: color("星光黄", "#f5c95d") },
+  colorways: [
+    way("sunset-kite", "晚霞风筝", { K: color("夜空墨", "#29283b"), O: color("蜜橘", "#ee7b52"), W: color("奶油白", "#fff5df"), B: color("湖水蓝", "#5daabe"), Y: color("星光黄", "#f5c95d") }),
+    way("berry-kite", "莓果风筝", { K: color("梅子紫", "#624663"), O: color("樱花粉", "#ef91a7"), W: color("雪花白", "#fffdf7"), B: color("葡萄紫", "#775f9c"), Y: color("星光黄", "#f5c95d") }),
+    way("forest-kite", "森林风筝", { K: color("深海蓝", "#355276"), O: color("焦糖", "#c58a5b"), W: color("奶油白", "#fff5df"), B: color("薄荷蓝", "#58b7ad"), Y: color("嫩芽绿", "#a8ca79") }),
+  ],
+  rows: rows18(["..........BBBB....", "........BBBBBBBB..", ".......BBBWWBBBBB.", "........BBBBBBBBBB", ".........BBBBBBBB.", "..........BBBBBB..", ".........YYYY.....", "........YYYY......", ".......YYYY.......", "......YYYY........", "...K.YYYY.........", "..KOKKYYY.........", ".KOOOOKYY.........", "KKOWOOKYY.........", "KOWWWOKK..........", ".KOOOOKK..........", ".KOOOOKK..........", "KKOOOOKK.........."]),
+  layers: rows18(["..........PPPP....", "........PPPPPPPP..", ".......PPPPPPPPPP.", "........PPPPPPPPPP", ".........PPPPPPPP.", "..........PPPPPP..", ".........FFFF.....", "........FFFF......", ".......FFFF.......", "......FFFF........", "...F.FFFF.........", "..BBBBBBB.........", ".BBBBBBBB.........", "BBBBBBBBB.........", "BBBBBBBB..........", ".BBBBBBB..........", ".BBBBBBB..........", "BBBBBBBB.........."]),
+  provenance: { creationDate: "2026-08-13", method: "从空白 18×18 网格开始人工逐格构图；用四邻域、割点、缩略图与剪影脚本反复校验。", referenceBoundary: "只使用“狐狸拉着鲸鱼形风筝”这一通用题材。", authoringDisclosure: "人工网格创作。", rightsReview: "家庭自用。", revision: "v14-r1", gridHash: "98e55a7879b6dfc33aa9a010e8d742b3ac78c000035d343367336f1cf1b5a03b", sourceHash: "13ad7eddcbd0cde746f26ec9ed31a9b9a8126d101230e29441d944cd94c20474" },
+};
+
+const otterSub: Pattern = {
+  id: "otter-sub", name: "水獭开泡泡潜艇", story: "小水獭探出圆窗，开着潜艇去寻找会发光的海底邮局。", category: "奇想", motion: "glide",
+  animation: "水獭探头点动；尾部螺旋桨循环转动；圆窗和舱灯依次亮起", motionPlan: { body: "水獭探头点动", prop: "尾部螺旋桨循环转动", fx: "圆窗和舱灯依次亮起" },
+  pieceLabel: "一体成品", pieceSizes: [175], skillTip: "先拼圆窗里的水獭脸，再沿黄色外壳收到左后方的螺旋桨。",
+  estimatedMinutes: [34, 50], difficultyAxes: { beads: 175, colorChanges: 93, pieces: 1, articulationPoints: 3, symmetry: 96, repetition: 213 },
+  difficultyLabel: "舱体分区", difficultyWhy: "潜艇外壳是稳定大轮廓，水獭脸、圆窗与尾部螺旋桨构成多段有意义换色。",
+  playIdea: "完成后让螺旋桨循环转动，水獭探头上下点动，圆窗从暗到亮。",
+  assemblyNotes: ["水獭、潜艇和螺旋桨连成一个主件。", "摆放时潜艇头朝右，螺旋桨在左后方。"],
+  childFinishLine: "拼好后请大人帮忙", reserveByColor: { K: 5, Y: 7, B: 5, C: 5, W: 4, R: 3 },
+  palette: { K: color("夜空墨", "#29283b"), Y: color("星光黄", "#f5c95d"), B: color("湖水蓝", "#5daabe"), C: color("可可棕", "#8a5d4a"), W: color("奶油白", "#fff5df"), R: color("莓果红", "#cf4e61") },
+  colorways: [
+    way("yellow-sub", "阳光潜艇", { K: color("夜空墨", "#29283b"), Y: color("星光黄", "#f5c95d"), B: color("湖水蓝", "#5daabe"), C: color("可可棕", "#8a5d4a"), W: color("奶油白", "#fff5df"), R: color("莓果红", "#cf4e61") }),
+    way("coral-sub", "珊瑚潜艇", { K: color("梅子紫", "#624663"), Y: color("珊瑚橙", "#ed826e"), B: color("葡萄紫", "#775f9c"), C: color("焦糖", "#c58a5b"), W: color("雪花白", "#fffdf7"), R: color("樱花粉", "#ef91a7") }),
+    way("mint-sub", "薄荷潜艇", { K: color("深海蓝", "#355276"), Y: color("薄荷蓝", "#58b7ad"), B: color("湖水蓝", "#5daabe"), C: color("焦糖", "#c58a5b"), W: color("奶油白", "#fff5df"), R: color("蜜橘", "#ee7b52") }),
+  ],
+  rows: rows18(["......CC....CC....", "......CCC..CCC....", ".....CCWWCCWWCC...", "......CCKWWKCC....", ".......CCCCCC.....", "......KKCCCCKK....", "....KKYYYYYYKK....", "..KKYYYYYYYYYYKK..", ".KKYYYBBBYYYYYKK..", "KKYYYBBBBBYYYYYYKK", "KKYYYBBBBBYYYYYYKK", ".KKYYYBBBYYYYYKK..", "..KKYYYY.YYYYYKK..", "....KKYYYYYYKK....", "....RRKKYYYYKK....", "...RRRRKKKK.......", "....RR............", ".................."]),
+  layers: rows18(["......BB....BB....", "......BBB..BBB....", ".....BBBBBBBBBB...", "......BBBBBBBB....", ".......BBBBBB.....", "......BBBBBBBB....", "....BBBBBBBBBB....", "..BBBBBBBBBBBBBB..", ".BBBBBFFFBBBBBBB..", "BBBBBFFFFFBBBBBBBB", "BBBBBFFFFFBBBBBBBB", ".BBBBBFFFBBBBBBB..", "..BBBBBB.BBBBBBB..", "....BBBBBBBBBB....", "....PPBBBBBBBB....", "...PPPPBBBB.......", "....PP............", ".................."]),
+  provenance: { creationDate: "2026-08-13", method: "从空白 18×18 网格开始人工逐格构图；用四邻域、割点、缩略图与剪影脚本反复校验。", referenceBoundary: "只使用“水獭从圆窗探头驾驶小潜艇”这一通用题材。", authoringDisclosure: "人工网格创作。", rightsReview: "家庭自用。", revision: "v14-r1", gridHash: "89a2aa9cc5e2da8968b6effc987190faca30ba44954f7ee0e094686877a49f4d", sourceHash: "91a50e15b63fe33f092b3d0d379931717a4ac8f4b734b2ad834965aa77740dc7" },
+};
+
+const skateDuck: Pattern = {
+  id: "skate-duck", name: "滑板鸭冲下彩虹坡", story: "鸭鸭弯下身体踩稳滑板，从彩虹坡顶冲向下一段冒险。", category: "运动", motion: "roll",
+  animation: "鸭子先压低再抬头；两组轮子滚动并带动滑板下坡；坡道色带从上到下依次亮起", motionPlan: { body: "鸭子先压低再抬头", prop: "两组轮子滚动并带动滑板下坡", fx: "坡道色带从上到下依次亮起" },
+  pieceLabel: "一体成品", pieceSizes: [155], skillTip: "先拼朝右的鸭头，再沿滑板找到右下的彩虹坡。",
+  estimatedMinutes: [30, 44], difficultyAxes: { beads: 155, colorChanges: 56, pieces: 1, articulationPoints: 3, symmetry: 68, repetition: 203 },
+  difficultyLabel: "坡顶冲刺", difficultyWhy: "鸭与滑板、彩虹坡连成一个主件；斜坡色带和轮组需要逐行核对。",
+  playIdea: "完成后让鸭与滑板沿坡顶向右滑下，再在舞台上接一个腾空翻板动作。",
+  assemblyNotes: ["鸭、滑板和彩虹坡连成一个主件。", "摆放时鸭头朝右，彩虹坡从板头下方向右下延伸。"],
+  childFinishLine: "拼好后请大人帮忙", reserveByColor: { K: 4, Y: 6, O: 3, B: 3, R: 3 },
+  palette: { K: color("夜空墨", "#29283b"), Y: color("星光黄", "#f5c95d"), O: color("蜜橘", "#ee7b52"), B: color("湖水蓝", "#5daabe"), R: color("莓果红", "#cf4e61") },
+  colorways: [
+    way("sunny-rush", "晴日冲坡", { K: color("夜空墨", "#29283b"), Y: color("星光黄", "#f5c95d"), O: color("蜜橘", "#ee7b52"), B: color("湖水蓝", "#5daabe"), R: color("莓果红", "#cf4e61") }),
+    way("berry-rush", "莓果冲坡", { K: color("梅子紫", "#624663"), Y: color("奶油白", "#fff5df"), O: color("珊瑚橙", "#ed826e"), B: color("葡萄紫", "#775f9c"), R: color("樱花粉", "#ef91a7") }),
+    way("mint-rush", "薄荷冲坡", { K: color("深海蓝", "#355276"), Y: color("雪花白", "#fffdf7"), O: color("蜜橘", "#ee7b52"), B: color("薄荷蓝", "#58b7ad"), R: color("莓果红", "#cf4e61") }),
+  ],
+  rows: rows18(["..................", ".....BBBB.........", "...BBYYYYY........", "..BBYYYYKYYYOO....", "..BBYYYYYYYYOOO...", "...YYYYOOYYYY.....", "..YYYYYYYYYYY.....", "...YYYYYYYYY......", "...YYYY.YYYY......", "....YY...YY.......", "..KKKKKKKKKKKKK...", "..KKKKKKKKKKKKK...", "...KKK.....KKK....", "...........RRRRRRR", "..........RRRRRRRR", ".........OOOOOOOOO", "........YYYYYYYYYY", ".......BBBBBBBBBBB"]),
+  layers: rows18(["..................", ".....BBBB.........", "...BBBBBBB........", "..BBBBBBBBBBBB....", "..BBBBBBBBBBBBB...", "...BBBBBBBBBB.....", "..BBBBBBBBBBB.....", "...BBBBBBBBB......", "...BBBB.BBBB......", "....BB...BB.......", "..PPPPPPPPPPPPP...", "..PPPPPPPPPPPPP...", "...PPP.....PPP....", "...........FFFFFFF", "..........FFFFFFFF", ".........FFFFFFFFF", "........FFFFFFFFFF", ".......FFFFFFFFFFF"]),
+  provenance: { creationDate: "2026-08-13", method: "从空白 18×18 网格开始人工逐格构图；用四邻域、割点、缩略图与剪影脚本反复校验。", referenceBoundary: "只使用“鸭子踩滑板冲下彩色坡道”这一通用题材。", authoringDisclosure: "人工网格创作。", rightsReview: "家庭自用。", revision: "v14-r1", gridHash: "83fbbb58360309eada53527b8da60417dc911a1fb18c7657233be4bd2591704b", sourceHash: "9a222060ef0de58d55c801da22d9538c845c9b1e73103d5a84a53be004b7baeb" },
+};
+
+const heartFrame: Pattern = {
+  id: "heart-frame", name: "爱心小相框", story: "一颗爱心中间空着，拼完可以立在桌上，塞进一张小照片。", category: "书桌", motion: "sway",
+  animation: "爱心外框轻轻左右晃；金边沿内圈亮起；底座稳住不动", motionPlan: { body: "爱心外框轻轻左右晃", prop: "金边沿内圈亮起", fx: "底座稳住不动" },
+  pieceLabel: "一体成品", pieceSizes: [106], skillTip: "先拼左右两瓣爱心外框，中间空着，再向下接到底座。",
+  estimatedMinutes: [20, 30], difficultyAxes: { beads: 106, colorChanges: 70, pieces: 1, articulationPoints: 0, symmetry: 106, repetition: 75 },
+  difficultyLabel: "镂空爱心", difficultyWhy: "106 颗、4 色；中间必须空着，外框要连成一颗爱心再接到底座。",
+  playIdea: "拼好后把相框立在书桌上，中间空窗可以放一张小照片。",
+  assemblyNotes: ["爱心外框和底座连成一个主件，中间空着。", "摆放时底座朝下，尖角朝下，空窗朝自己。"],
+  childFinishLine: "拼好后请大人帮忙", reserveByColor: { R: 4, W: 4, Y: 2, N: 3 },
+  palette: { R: color("莓果红", "#cf4e61"), W: color("奶油白", "#fff5df"), Y: color("星光黄", "#f5c95d"), N: color("深海蓝", "#355276") },
+  colorways: [
+    way("berry-frame", "草莓相框", { R: color("莓果红", "#cf4e61"), W: color("奶油白", "#fff5df"), Y: color("星光黄", "#f5c95d"), N: color("深海蓝", "#355276") }),
+    way("grape-frame", "葡萄相框", { R: color("葡萄紫", "#8d6bc0"), W: color("雪花白", "#fffdf7"), Y: color("樱花粉", "#ef91a7"), N: color("深海蓝", "#2c355b") }),
+    way("mint-frame", "薄荷相框", { R: color("薄荷绿", "#58b7ad"), W: color("奶油白", "#fff5df"), Y: color("柠檬黄", "#f2d25b"), N: color("深青玉", "#285e57") }),
+  ],
+  rows: rows18(["...RRRRR..RRRRR...", "..RWWWWWRRWWWWWR..", ".RWYYYYWWWWYYYYWR.", ".RWY..........YWR.", ".RW............WR.", ".RW............WR.", ".RW............WR.", "..RW..........WR..", "...RW........WR...", "....RW......WR....", ".....RW....WR.....", "......RW..WR......", ".......RWWR.......", "........RR........", ".......NNNN.......", "......NNNNNN......", ".....NN....NN.....", ".....NNNNNNNN....."]),
+  layers: rows18(["...PPPPP..PPPPP...", "..PBBBBBPPBBBBBP..", ".PBFFFFBBBBFFFFBP.", ".PBF..........FBP.", ".PB............BP.", ".PB............BP.", ".PB............BP.", "..PB..........BP..", "...PB........BP...", "....PB......BP....", ".....PB....BP.....", "......PB..BP......", ".......PBBP.......", "........PP........", ".......BBBB.......", "......BBBBBB......", ".....BB....BB.....", ".....BBBBBBBB....."]),
+  provenance: { creationDate: "2026-08-13", method: "从空白 18×18 网格开始人工逐格构图；用四邻域、割点、缩略图与剪影脚本反复校验。", referenceBoundary: "只使用“爱心形小相框立在底座上”这一通用题材；未描摹或复制第三方图样、角色或标识。", authoringDisclosure: "人工网格创作。", rightsReview: "家庭自用。", revision: "v15-r1", gridHash: "d05f3b50240254eccfb54d6fe686fc06fd4363401940fc93f9669301e1886f8d", sourceHash: "bb44e11105d7527ef1a960508e8c8c3c1935937786323787c338d793287859fa" },
+};
+
+const bowCat: Pattern = {
+  id: "bow-cat", name: "蝴蝶结小猫立牌", story: "小猫头顶一只大蝴蝶结，脚下有底座，拼完可以立在书桌上。", category: "书桌", motion: "hop",
+  animation: "蝴蝶结轻轻弹跳；小猫点头；底座稳住不动", motionPlan: { body: "小猫点头", prop: "蝴蝶结轻轻弹跳", fx: "底座稳住不动" },
+  pieceLabel: "一体成品", pieceSizes: [174], skillTip: "先拼头顶大蝴蝶结，再画出两只尖耳和脸，最后接到底座。",
+  estimatedMinutes: [35, 50], difficultyAxes: { beads: 174, colorChanges: 112, pieces: 1, articulationPoints: 2, symmetry: 174, repetition: 185 },
+  difficultyLabel: "立牌小猫", difficultyWhy: "174 颗、6 色；蝴蝶结、猫脸和底座要上下对齐，尖耳不能歪。",
+  playIdea: "拼好后把小猫立在书桌上，让大蝴蝶结朝向门口欢迎你。",
+  assemblyNotes: ["蝴蝶结、小猫和底座连成一个主件。", "摆放时底座朝下，尖耳朝上，蝴蝶结在头顶。"],
+  childFinishLine: "拼好后请大人帮忙", reserveByColor: { P: 4, W: 4, Y: 2, K: 4, O: 3, N: 3 },
+  palette: { P: color("樱花粉", "#ef91a7"), W: color("奶油白", "#fff5df"), Y: color("星光黄", "#f5c95d"), K: color("墨黑", "#29283b"), O: color("蜜橘", "#ee7b52"), N: color("深海蓝", "#355276") },
+  colorways: [
+    way("honey-bow", "蜜橘领结", { P: color("樱花粉", "#ef91a7"), W: color("奶油白", "#fff5df"), Y: color("星光黄", "#f5c95d"), K: color("墨黑", "#29283b"), O: color("蜜橘", "#ee7b52"), N: color("深海蓝", "#355276") }),
+    way("grape-bow", "葡萄领结", { P: color("葡萄紫", "#9a82cc"), W: color("雪花白", "#fffdf7"), Y: color("柠檬黄", "#f2d25b"), K: color("深海蓝", "#2c355b"), O: color("薰衣草紫", "#b7a0d2"), N: color("深葡萄", "#51416f") }),
+    way("moon-bow", "月光领结", { P: color("莓果粉", "#d96a83"), W: color("雪白", "#f8f7f2"), Y: color("奶油黄", "#f5cd76"), K: color("炭黑", "#30303a"), O: color("暖月灰", "#b9b3ad"), N: color("夜空墨", "#29283b") }),
+  ],
+  rows: rows18([".....PPPPPPPP.....", "....PPWYYYYWPP....", "...PPWWYYYYWWPP...", "....PPPPPPPPPP....", ".....KK....KK.....", "....KWWK..KWWK....", "...KOWWWWWWWWOK...", "...KOWKWWWWKWOK...", "...KOWWWKKWWWOK...", "...KOWWWWWWWWOK...", "....KOPPPPPPOK....", "...KOOOOOOOOOOK...", "...KOOOOOOOOOOK...", "....KKKKKKKKKK....", "......NNNNNN......", ".....NNNNNNNN.....", "....NNN....NNN....", "....NNNNNNNNNN...."]),
+  layers: rows18([".....PPPPPPPP.....", "....PPFFFFFFPP....", "...PPFFFFFFFFPP...", "....PPPPPPPPPP....", ".....BB....BB.....", "....BFFB..BFFB....", "...BBFFFFFFFFBB...", "...BBFBFFFFBFBB...", "...BBFFFBBFFFBB...", "...BBFFFFFFFFBB...", "....BBPPPPPPBB....", "...BBBBBBBBBBBB...", "...BBBBBBBBBBBB...", "....BBBBBBBBBB....", "......BBBBBB......", ".....BBBBBBBB.....", "....BBB....BBB....", "....BBBBBBBBBB...."]),
+  provenance: { creationDate: "2026-08-13", method: "从空白 18×18 网格开始人工逐格构图；用四邻域、割点、缩略图与剪影脚本反复校验。", referenceBoundary: "只使用“头顶蝴蝶结的小猫立牌”这一通用题材；未描摹或复制第三方图样、角色或标识。", authoringDisclosure: "人工网格创作。", rightsReview: "家庭自用。", revision: "v15-r1", gridHash: "eb1cd37072c849e05767340068bdad1912d370f4334a8f96a281fca9f5af8da9", sourceHash: "c362d4aa774f4f9146c155962417a07a6fac21418eeb15663426663f05c54d38" },
+};
+
+const berrySundae: Pattern = {
+  id: "berry-sundae", name: "草莓三球甜筒", story: "草莓、奶油和橘子三球叠在甜筒上，底下有底座，拼完可以立在桌上。", category: "书桌", motion: "bounce",
+  animation: "顶上草莓轻轻弹跳；三球错拍晃动；底座稳住不动", motionPlan: { body: "三球错拍晃动", prop: "顶上草莓轻轻弹跳", fx: "底座稳住不动" },
+  pieceLabel: "一体成品", pieceSizes: [149], skillTip: "先拼顶上的草莓，再一层层往下做三球和甜筒，最后接到底座。",
+  estimatedMinutes: [30, 45], difficultyAxes: { beads: 149, colorChanges: 96, pieces: 1, articulationPoints: 8, symmetry: 126, repetition: 162 },
+  difficultyLabel: "分层甜筒", difficultyWhy: "149 颗、6 色；三球和锥形甜筒要上下对齐，底座不能歪。",
+  playIdea: "拼好后把甜筒立在书桌上，当作今天的一份不会化的点心。",
+  assemblyNotes: ["草莓、三球、甜筒和底座连成一个主件。", "摆放时底座朝下，草莓在最上面。"],
+  childFinishLine: "拼好后请大人帮忙", reserveByColor: { R: 2, W: 4, P: 2, Y: 5, O: 3, N: 2 },
+  palette: { R: color("莓果红", "#cf4e61"), W: color("奶油白", "#fff5df"), P: color("樱花粉", "#ef91a7"), Y: color("星光黄", "#f5c95d"), O: color("蜜橘", "#ee7b52"), N: color("深海蓝", "#355276") },
+  colorways: [
+    way("berry-cone", "草莓甜筒", { R: color("莓果红", "#cf4e61"), W: color("奶油白", "#fff5df"), P: color("樱花粉", "#ef91a7"), Y: color("星光黄", "#f5c95d"), O: color("蜜橘", "#ee7b52"), N: color("深海蓝", "#355276") }),
+    way("grape-cone", "葡萄甜筒", { R: color("葡萄紫", "#8d6bc0"), W: color("雪花白", "#fffdf7"), P: color("薰衣草紫", "#b7a0d2"), Y: color("薄荷绿", "#78c9b2"), O: color("珊瑚粉", "#f28a9a"), N: color("深葡萄", "#51416f") }),
+    way("mint-cone", "薄荷甜筒", { R: color("珊瑚橘", "#ed826e"), W: color("奶油白", "#fff5df"), P: color("薄荷绿", "#58b7ad"), Y: color("柠檬黄", "#f2d25b"), O: color("蜜橘", "#ee7b52"), N: color("深青玉", "#285e57") }),
+  ],
+  rows: rows18(["........RR........", ".......RWWWR......", "......RWWWWWR.....", ".....PPPPPPPPP....", "....PPWWPWWWWPP...", "...PPWWWWWWWWWPP..", "....YYYYYYYYYYY...", "...YYYWYYYYYWYY...", "..YYYYYYYYYYYYYY..", "...OOOOOOOOOOO....", "..OOOOWWWWWWOOO...", "...OOOOOOOOOOO....", ".....WYYYYYYW.....", "......WYYYYW......", ".......WYYW.......", "........WW........", ".......NNNN.......", "......NNNNNN......"]),
+  layers: rows18(["........FF........", ".......FBBBF......", "......FBBBBBF.....", ".....PPPPPPPPP....", "....PPBBPBBBBPP...", "...PPBBBBBBBBBPP..", "....BBBBBBBBBBB...", "...BBBBBBBBBBBB...", "..BBBBBBBBBBBBBB..", "...BBBBBBBBBBB....", "..BBBBBBBBBBBBB...", "...BBBBBBBBBBB....", ".....BBBBBBBB.....", "......BBBBBB......", ".......BBBB.......", "........BB........", ".......BBBB.......", "......BBBBBB......"]),
+  provenance: { creationDate: "2026-08-13", method: "从空白 18×18 网格开始人工逐格构图；用四邻域、割点、缩略图与剪影脚本反复校验。", referenceBoundary: "只使用“三球冰淇淋甜筒立在底座上”这一通用题材；未描摹或复制第三方图样、角色或标识。", authoringDisclosure: "人工网格创作。", rightsReview: "家庭自用。", revision: "v15-r1", gridHash: "238a5bffca5fbcd0d5b4879649c1d858def810359449c1f044b52181b30d290e", sourceHash: "dd27c0021b788861def25e3d03e776d66e6d3cb6a42796dad2e9ffb7eeb989df" },
+};
+
+const berryBoba: Pattern = {
+  id: "berry-boba", name: "草莓珍珠奶茶", story: "一杯插着吸管的草莓奶茶，杯底有珍珠，拼完可以立在书桌上。", category: "书桌", motion: "float",
+  animation: "吸管轻轻晃动；杯口奶油起伏；珍珠在杯底错拍亮起", motionPlan: { body: "杯子稳住", prop: "吸管轻轻晃动", fx: "珍珠在杯底错拍亮起" },
+  pieceLabel: "一体成品", pieceSizes: [162], skillTip: "先拼吸管，再画出杯口奶油、杯子和珍珠，最后接到底座。",
+  estimatedMinutes: [30, 45], difficultyAxes: { beads: 162, colorChanges: 90, pieces: 1, articulationPoints: 0, symmetry: 162, repetition: 204 },
+  difficultyLabel: "珍珠杯", difficultyWhy: "162 颗、6 色；吸管、杯口和杯底珍珠要上下对齐。",
+  playIdea: "拼好后把奶茶立在书桌上，当作今天的一杯不会洒的小饮品。",
+  assemblyNotes: ["吸管、杯子、珍珠和底座连成一个主件。", "摆放时底座朝下，吸管朝上。"],
+  childFinishLine: "拼好后请大人帮忙", reserveByColor: { G: 2, W: 8, P: 2, Y: 5, K: 2, N: 2 },
+  palette: { G: color("叶子绿", "#6ba270"), W: color("奶油白", "#fff5df"), P: color("樱花粉", "#ef91a7"), Y: color("星光黄", "#f5c95d"), K: color("墨黑", "#29283b"), N: color("深海蓝", "#355276") },
+  colorways: [
+    way("berry-tea", "草莓奶茶", { G: color("叶子绿", "#6ba270"), W: color("奶油白", "#fff5df"), P: color("樱花粉", "#ef91a7"), Y: color("星光黄", "#f5c95d"), K: color("墨黑", "#29283b"), N: color("深海蓝", "#355276") }),
+    way("grape-tea", "葡萄奶茶", { G: color("薄荷绿", "#58b7ad"), W: color("雪花白", "#fffdf7"), P: color("葡萄紫", "#9a82cc"), Y: color("薰衣草紫", "#b7a0d2"), K: color("深海蓝", "#2c355b"), N: color("深葡萄", "#51416f") }),
+    way("matcha-tea", "抹茶奶茶", { G: color("叶子绿", "#6ba270"), W: color("奶油白", "#fff5df"), P: color("薄荷绿", "#78c9b2"), Y: color("柠檬叶", "#d6d765"), K: color("夜空墨", "#29283b"), N: color("深青玉", "#285e57") }),
+  ],
+  rows: rows18(["........GG........", "........GG........", "........GG........", "......WWWWWW......", ".....WPPPPPPW.....", "....WPPWWWWPPW....", "...WPPWWWWWWPPW...", "...WPPWWWWWWPPW...", "...WWWWWWWWWWWW...", "...WYYYYYYYYYYW...", "...WYYYYYYYYYYW...", "...WYYKKYYKKYYW...", "...WYYKKYYKKYYW...", "...WYYYYYYYYYYW...", "...WWWWWWWWWWWW...", "....WWWWWWWWWW....", ".....NNNNNNNN.....", "......NNNNNN......"]),
+  layers: rows18(["........FF........", "........FF........", "........FF........", "......BBBBBB......", ".....BPPPPPPB.....", "....BPPBBBBPPB....", "...BPPBBBBBBPPB...", "...BPPBBBBBBPPB...", "...BBBBBBBBBBBB...", "...BBBBBBBBBBBB...", "...BBBBBBBBBBBB...", "...BBBFFBBFFBBB...", "...BBBFFBBFFBBB...", "...BBBBBBBBBBBB...", "...BBBBBBBBBBBB...", "....BBBBBBBBBB....", ".....BBBBBBBB.....", "......BBBBBB......"]),
+  provenance: { creationDate: "2026-08-13", method: "从空白 18×18 网格开始人工逐格构图；用四邻域、割点、缩略图与剪影脚本反复校验。", referenceBoundary: "只使用“插吸管的珍珠奶茶杯立在底座上”这一通用题材；未描摹或复制第三方图样、角色或标识。", authoringDisclosure: "人工网格创作。", rightsReview: "家庭自用。", revision: "v15-r1", gridHash: "1b017aa8d57e02a8affc087e844f61e5881a5e52e68a00c2da033e9cc1de896e", sourceHash: "1f0aa47c4abbe2a2ee3ace0febb2ac9bc7c3b50a4f4ae0a5b3f5fe14e34d0267" },
+};
+
+export const PATTERNS: Pattern[] = [scarfSprint, heartFrame, bowCat, berrySundae, berryBoba, balloonBear, moonRabbit, sushiTrain, whaleCastle, foxKite, otterSub, skateDuck];
 
 export const targetCount = (pattern: Pattern) => pattern.rows.join("").split("").filter(cell => cell !== ".").length;
 
@@ -72,18 +299,39 @@ export const connectedComponents = (pattern: Pattern) => {
   return components.sort((a, b) => b - a);
 };
 
+/**
+ * 自由画板专用色盘。它不属于任何图纸，孩子在空白 18×18 上用这些颜色自由创作。
+ * "W" 保持白色语义：海报渲染会给白色豆加深色描边，防止在纸上看不见。
+ */
+export const FREE_PALETTE: Record<string, BeadColor> = {
+  R: color("番茄红", "#e2574c"),
+  O: color("暖阳橙", "#ef8b57"),
+  Y: color("柠檬黄", "#f4c95f"),
+  G: color("嫩草绿", "#7cb96d"),
+  T: color("湖水青", "#5fc2c7"),
+  B: color("晴空蓝", "#5b8fd6"),
+  N: color("深海蓝", "#3f5f9e"),
+  P: color("葡萄紫", "#8d6bc0"),
+  K: color("樱花粉", "#f2a3c0"),
+  D: color("可可棕", "#9c6b4a"),
+  W: color("云朵白", "#fdf6ec"),
+  X: color("墨夜黑", "#33304a"),
+};
+
 PATTERNS.forEach(pattern => {
   if (pattern.rows.length !== 18 || pattern.rows.some(row => row.length !== 18)) throw new Error(`图纸尺寸错误：${pattern.id}`);
-  const allowed = new Set([".", ...Object.keys(pattern.palette)]);
-  if (pattern.rows.some(row => [...row].some(cell => !allowed.has(cell)))) throw new Error(`图纸含未知色号：${pattern.id}`);
-  if (targetCount(pattern) < 90 || targetCount(pattern) > 180) throw new Error(`图纸颗数超出儿童友好范围：${pattern.id}`);
-  if (pattern.layers.length) {
-    const used = new Set(pattern.rows.join("").replaceAll(".", ""));
-    if ([...used].some(color => !pattern.palette[color]) || Object.keys(pattern.palette).some(color => !used.has(color))) throw new Error(`图纸色表与实际用色不一致：${pattern.id}`);
-    if (pattern.layers.length !== 18 || pattern.layers.some(row => row.length !== 18)) throw new Error(`动画分层尺寸错误：${pattern.id}`);
-    if (pattern.layers.join("").split("").some((layer, index) => (pattern.rows.join("")[index] === ".") !== (layer === ".") || !".BPF".includes(layer))) throw new Error(`动画分层未完整覆盖图纸：${pattern.id}`);
-    const components = connectedComponents(pattern);
-    if (components.some(size => size < 4)) throw new Error(`图纸含无法实物成型的小散件：${pattern.id}`);
-    if (pattern.pieceSizes.join(",") !== components.join(",")) throw new Error(`图纸散件声明与实物结构不一致：${pattern.id}`);
-  }
+  if (targetCount(pattern) > 180) throw new Error(`图纸超过 180 颗：${pattern.id}`);
+  const used = new Set(pattern.rows.join("").replaceAll(".", ""));
+  const paletteKeys = Object.keys(pattern.palette);
+  if ([...used].some(key => !pattern.palette[key]) || paletteKeys.some(key => !used.has(key))) throw new Error(`图纸色表与网格不一致：${pattern.id}`);
+  if (used.size < 4 || used.size > 6) throw new Error(`图纸必要色超出 4–6 种：${pattern.id}`);
+  const counts = Object.fromEntries(paletteKeys.map(key => [key, pattern.rows.join("").split("").filter(cell => cell === key).length]));
+  if (Object.values(counts).some(count => count < 4 || count / targetCount(pattern) < .03)) throw new Error(`图纸含装饰性弱色：${pattern.id}`);
+  if (pattern.colorways.length !== 3) throw new Error(`图纸未提供 3 套手工配色：${pattern.id}`);
+  const sortedPaletteKeys = [...paletteKeys].sort().join();
+  for (const colorway of pattern.colorways) if (Object.keys(colorway.palette).sort().join() !== sortedPaletteKeys) throw new Error(`配色符号不完整：${pattern.id}/${colorway.id}`);
+  if (pattern.layers.length !== 18 || pattern.layers.some(row => row.length !== 18)) throw new Error(`动画分层尺寸错误：${pattern.id}`);
+  if (pattern.layers.join("").split("").some((layer, index) => (pattern.rows.join("")[index] === ".") !== (layer === ".") || !".BPF".includes(layer))) throw new Error(`动画分层未覆盖图纸：${pattern.id}`);
+  const components = connectedComponents(pattern);
+  if (components.some(size => size < 24) || components.join(",") !== pattern.pieceSizes.join(",")) throw new Error(`图纸含小散件或部件声明不实：${pattern.id}`);
 });

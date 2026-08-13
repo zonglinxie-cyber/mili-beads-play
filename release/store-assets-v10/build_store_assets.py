@@ -95,9 +95,8 @@ def build_feature_graphic() -> Path:
     canvas = Image.alpha_composite(canvas.convert("RGBA"), shadow)
     canvas.alpha_composite(board, (585, 72))
 
-    # The selected v4 cat is the recognizable brand anchor; the grid card behind it
-    # remains the honest gameplay cue. This crop is a deterministic derivative of the
-    # reviewed 1024 source, not a separate marketing illustration.
+    # The selected coordinate-grid cat is the recognizable brand anchor. The 1024 PNG
+    # is itself a deterministic derivative of the approved 18x18 JSON source.
     mascot = Image.open(ROOT / "public/app-icon-1024.png").convert("RGBA").resize((272, 272), Image.Resampling.LANCZOS)
     mascot_mask = Image.new("L", mascot.size, 0)
     ImageDraw.Draw(mascot_mask).rounded_rectangle((0, 0, 271, 271), 58, fill=255)
@@ -174,7 +173,7 @@ def image_info(path: Path):
 def build_contact_sheet(paths: list[Path]) -> Path:
     sheet = Image.new("RGB", (1800, 1840), "#eee6da")
     draw = ImageDraw.Draw(sheet)
-    draw.text((48, 28), "米粒拼豆社 · 上架素材 v10 · 品牌 v2", font=font(36, True), fill=INK)
+    draw.text((48, 28), "米粒拼豆社 · 上架素材 v10 · 网格品牌 v4", font=font(36, True), fill=INK)
 
     feature = Image.open(paths[0]).convert("RGB")
     feature.thumbnail((620, 303), Image.Resampling.LANCZOS)
@@ -241,8 +240,8 @@ def main():
     manifest = {
         "generatedAt": "2026-08-12",
         "provenance": {
-            "featureGraphic": "Deterministic composition using the reviewed v4 cat brand source, current app palette, and checked-in rocket-cat grid.",
-            "icon": "Opaque RGBA 32-bit derivative of the reviewed v4 public/app-icon-512.png, with a full-square purple background for Play dynamic masking.",
+            "featureGraphic": "Deterministic composition using the approved orbit-spark-v2 18x18 grid brand source and current app palette.",
+            "icon": "Opaque RGBA 32-bit deterministic derivative of the approved 18x18 grid JSON, with a full-square brand background for Play dynamic masking.",
             "screenshots": "Captured from the final production Web build after driving the real 170-bead E2E completion path. Play captures use a 540x1080 viewport at 2x. App Store captures use a 440x956 viewport at 3x and are explicitly labeled web composites, not device screenshots.",
             "codeHashes": {
                 relative: hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()

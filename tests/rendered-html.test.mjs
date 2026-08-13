@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { PATTERNS } from "../app/patterns.ts";
 
 const port = 4317;
 let server;
@@ -19,9 +20,10 @@ test.after(() => server?.kill());
 test("renders the complete mobile bead game shell", async () => {
   const html = await fetch(`http://127.0.0.1:${port}`).then(r => r.text());
   assert.match(html, /米粒拼豆社/);
-  assert.match(html, /火箭猫/);
-  assert.match(html, /一眼就想拼的图纸/);
+  assert.match(html, /本周精选/);
+  assert.match(html, /再选一张/);
   assert.match(html, /图纸/);
+  for (const pattern of PATTERNS) assert.match(html, new RegExp(pattern.name));
   assert.doesNotMatch(html, /SkeletonPreview|codex-preview|ChatGPT 登录/);
 });
 
@@ -32,27 +34,40 @@ test("ships installable offline assets", async () => {
   ]);
   assert.equal(manifest.display, "standalone");
   assert.equal(manifest.short_name, "米粒拼豆");
-  assert.match(sw, /mili-beads-v5/);
-  assert.match(sw, /\/privacy/);
-  assert.match(sw, /\/support/);
+  assert.match(sw, /mili-beads-v9/);
+  assert.match(sw, /"privacy"/);
+  assert.match(sw, /"support"/);
   assert.match(sw, /clients\.claim/);
 });
 
 test("ships a real playable pattern catalog", async () => {
   const fs = await import("node:fs/promises");
-  const [source, catalog] = await Promise.all([
+  const [source, catalog, playContent] = await Promise.all([
     fs.readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     fs.readFile(new URL("../app/patterns.ts", import.meta.url), "utf8"),
+    fs.readFile(new URL("../app/play-content.ts", import.meta.url), "utf8"),
   ]);
   assert.match(catalog, /export const PATTERNS: Pattern\[\]/);
-  assert.equal((catalog.match(/id:\s*"[a-z-]+"/g) ?? []).length, 12);
+  assert.equal(PATTERNS.length, 12);
+  assert.deepEqual(PATTERNS.map(pattern => pattern.id), ["scarf-sprint", "heart-frame", "bow-cat", "berry-sundae", "berry-boba", "balloon-bear", "moon-rabbit", "sushi-train", "whale-castle", "fox-kite", "otter-sub", "skate-duck"]);
   assert.match(source, /onPointerDown/);
   assert.match(source, /setSavedBoards/);
   assert.match(source, /finish-sheet/);
   assert.match(source, /makePoster/);
   assert.match(source, /生成打印图/);
-  assert.match(source, /生成作品卡/);
-  assert.match(source, /播放动画/);
+  assert.match(source, /做成作品卡/);
+  assert.match(source, /进入小舞台/);
+  assert.match(source, /ZoneThumb/);
+  assert.match(source, /openStageFromFinish/);
+  assert.match(playContent, /export type PlayMode = BuildMode \| "spot"/);
+  assert.match(source, /enterPlayMode\("assistant"\)/);
+  assert.match(source, /配色找不同/);
+  assert.match(source, /这一组已拼好/);
+  assert.match(source, /撤销一步/);
+  assert.match(source, /MysteryArt/);
+  assert.match(source, /编一句故事/);
+  assert.match(source, /角色说话/);
+  assert.doesNotMatch(source, /今日动态任务/);
   assert.match(catalog, /PATTERNS\.forEach/);
 });
 
@@ -63,6 +78,7 @@ test("provides a parent-facing privacy page", async () => {
   assert.match(html, /家长与隐私说明/);
   assert.match(html, /不包含广告/);
   assert.match(html, /当前设备/);
+  assert.match(html, /故事卡/);
 });
 
 test("provides a public parent support page", async () => {

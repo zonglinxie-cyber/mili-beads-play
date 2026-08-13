@@ -56,3 +56,6 @@ yarn-error.log*
 /release/native-verification-v10/
 /release/native-verification-brand-final/
 /android/release/
+
+# Local Netlify folder
+.netlify
