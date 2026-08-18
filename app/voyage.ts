@@ -417,14 +417,14 @@ export const stepCost = (world: VoyageWorld, run: VoyageRun, from: number, to: n
 };
 
 export const constraintLine = (world: VoyageWorld, constraint: VoyageConstraint) => {
-  if (constraint.kind === "avoid") return `送信时不要踩到${colorName(world, constraint.color)}`;
+  if (constraint.kind === "avoid") return `走路时别踩${colorName(world, constraint.color)}`;
   if (constraint.kind === "need-stamp") {
     const stamp = world.stamps.find(item => item.id === constraint.stampId);
-    return `门口要一枚${stamp ? colorName(world, stamp.color) : "夜航"}印章`;
+    return `先拿到${stamp ? colorName(world, stamp.color) : ""}印章才能送到`;
   }
-  if (constraint.kind === "min-charge") return `送到时身上至少有${constraint.amount}格${colorName(world, constraint.color)}`;
-  if (constraint.kind === "pass-glow") return "路上要经过一颗会发光的豆子";
-  return `顺着风至少走${constraint.steps}步`;
+  if (constraint.kind === "min-charge") return `送到前把${colorName(world, constraint.color)}攒到${constraint.amount}点`;
+  if (constraint.kind === "pass-glow") return "路上要经过一颗会亮的豆子";
+  return `顺着风走${constraint.steps}步`;
 };
 
 export const weatherLine = (world: VoyageWorld) => {
@@ -902,21 +902,65 @@ export const hintPath = (world: VoyageWorld, run: VoyageRun) => {
   return bfsPath(run.position, goal, walkableSet(world, run), world.width, world.height);
 };
 
-export const voyageHint = (world: VoyageWorld, run: VoyageRun) => {
-  if (run.complete) return "夜航印章盖好了。可以等新月亮再走一次。";
+export const voyageHint = (world: VoyageWorld, run: VoyageRun) => voyageTask(world, run).how;
+
+export type VoyageTask = {
+  title: string;
+  how: string;
+  nextIndex: number | null;
+  action: "walk" | "attune" | "answer" | "bridge" | "done";
+};
+
+export const voyageTask = (world: VoyageWorld, run: VoyageRun): VoyageTask => {
+  if (run.complete) return { title: "都做完了", how: "信送完了，印章也拿到了。", nextIndex: null, action: "done" };
+  const hereStamp = stampAt(world, run);
+  if (hereStamp) {
+    return {
+      title: "点下面黄色大按钮",
+      how: `站在${colorName(world, hereStamp.color)}印章上了。点「拿走印章」。`,
+      nextIndex: run.position,
+      action: "attune",
+    };
+  }
+  const hereTalk = encounterAt(world, run);
+  if (hereTalk?.kind === "riddle") {
+    return { title: "猜一个颜色", how: hereTalk.prompt, nextIndex: run.position, action: "answer" };
+  }
   const path = hintPath(world, run);
-  const first = path && path.length > 1 ? path[1] : null;
-  const dir = first !== null ? directionBetween(run.position, first, world.width) : null;
-  const dirText = dir !== null ? `可以往${DIR_LABELS[dir]}走。` : "";
+  const first = path && path.length > 1 ? path[1] : path && path.length === 1 ? path[0] : null;
+  const dir = first !== null && first !== run.position ? directionBetween(run.position, first, world.width) : null;
+  const step = dir !== null ? `点带白圈、写着「${DIR_LABELS[dir]}」的那一格。` : "点旁边带白圈的豆子。";
+  if (!path) {
+    return { title: "路连不上", how: "点下面「搭一座桥」，再点两颗豆子中间的空格。", nextIndex: null, action: "bridge" };
+  }
   if (run.carrying) {
     const letter = world.letters.find(item => item.id === run.carrying);
-    return `把信送到${letter?.toName ?? "对面"}。${constraintLine(world, letter?.constraint ?? { kind: "pass-glow" })}。${dirText}`;
+    return {
+      title: "去送信",
+      how: `手里有信。送到写着「到」的绿点。${constraintLine(world, letter?.constraint ?? { kind: "pass-glow" })}。${step}`,
+      nextIndex: first === run.position ? null : first,
+      action: "walk",
+    };
   }
   const waiting = world.letters.find(letter => !run.letters.includes(letter.id));
-  if (waiting) return `去${waiting.fromName}取信。${dirText}`;
+  if (waiting) {
+    return {
+      title: "去拿信",
+      how: `先走到写着「信」的豆子。${step}`,
+      nextIndex: first === run.position ? null : first,
+      action: "walk",
+    };
+  }
   const stamp = world.stamps.find(item => !run.stamps.includes(item.id));
-  if (stamp) return `还差${colorName(world, stamp.color)}印章。${dirText}`;
-  return "先走近发光的豆子，灯会亮一点。";
+  if (stamp) {
+    return {
+      title: "去拿印章",
+      how: `再走到写着「印」的豆子。${step}`,
+      nextIndex: first === run.position ? null : first,
+      action: "walk",
+    };
+  }
+  return { title: "走一步看看", how: step, nextIndex: first === run.position ? null : first, action: "walk" };
 };
 
 export const stampAt = (world: VoyageWorld, run: VoyageRun) =>
@@ -1058,4 +1102,13 @@ export const childVoyageCorpus = () => [
   "夜航探图",
   "提着灯走进图案里",
   "在豆子上走路、送信、开桥",
+  "点旁边带白圈的豆子，往下走去拿信。",
+  "你是写着「我」的那一格。只能点旁边一格。",
+  "先去拿信，再送到写着「到」的地方。",
+  "走路时别踩草莓红",
+  "先拿到印章才能送到",
+  "去拿信",
+  "去送信",
+  "点下面黄色大按钮",
+  "点带白圈、写着「下」的那一格。",
 ].join("\n");

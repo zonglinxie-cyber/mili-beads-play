@@ -1,32 +1,26 @@
 /* eslint-disable @next/next/no-img-element -- companion avatar matches the rest of the offline shell */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Check, Compass, Mail, Moon, Sparkles, Wind } from "lucide-react";
+import { ArrowLeft, Check, Sparkles } from "lucide-react";
 import type { Pattern } from "./patterns";
 import {
   ATTUNE_COST,
   BURST_COST,
-  MIX_COST,
-  MOON_LABELS,
+  DIR_LABELS,
   VOYAGE_VIEW,
-  WIND_LABELS,
   buildVoyageWorld,
   canMixColors,
-  constraintLine,
   createVoyageRun,
-  currentLetter,
+  directionBetween,
   encounterAt,
   isGapCell,
-  isGlowCell,
   lanternMax,
   neighborsOf,
   reduceVoyage,
   stampAt,
   viewportOrigin,
   visibleCells,
-  voyageHint,
-  voyageProgress,
   voyageSeedFor,
-  weatherLine,
+  voyageTask,
   type VoyageAction,
   type VoyageRun,
 } from "./voyage";
@@ -44,12 +38,18 @@ type VoyageViewProps = {
   onCraft: (id: string) => void;
 };
 
+const COACH_KEY = "mili-voyage-coach-v2";
+
 function PixelArt({ pattern }: { pattern: Pattern }) {
   const cells = pattern.rows.join("").split("");
   return <div className="art pixels voyage-mini-art" style={{ "--cols": pattern.rows[0].length } as React.CSSProperties}>
     {cells.map((cell, index) => <i key={index} className={cell === "." ? "empty" : "filled"} style={cell !== "." ? { backgroundColor: pattern.palette[cell]?.color } : undefined} />)}
   </div>;
 }
+
+const readCoach = () => {
+  try { return localStorage.getItem(COACH_KEY) === "1"; } catch { return false; }
+};
 
 export function VoyageView({
   catalog,
@@ -68,10 +68,14 @@ export function VoyageView({
   const [riddleOpen, setRiddleOpen] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
   const [confirmMoon, setConfirmMoon] = useState(false);
+  const [showMore, setShowMore] = useState(false);
+  const [coachStep, setCoachStep] = useState(() => readCoach() ? -1 : 0);
   const [message, setMessage] = useState("");
   const messageTimer = useRef<number | null>(null);
   const booted = useRef<string | null>(null);
 
+  const starters = catalog.filter(item => !item.advanced);
+  const extras = catalog.filter(item => item.advanced);
   const pattern = activeId ? resolvePattern(activeId) : null;
   const saved = activeId ? voyages[activeId] : undefined;
   const world = useMemo(() => {
@@ -90,7 +94,7 @@ export function VoyageView({
     onPersist(createVoyageRun(world));
   }, [activeId, world, voyages, onPersist]);
 
-  const say = (text: string, ms = 2800) => {
+  const say = (text: string, ms = 3200) => {
     setMessage(text);
     if (messageTimer.current !== null) window.clearTimeout(messageTimer.current);
     messageTimer.current = window.setTimeout(() => { setMessage(""); messageTimer.current = null; }, ms);
@@ -118,7 +122,7 @@ export function VoyageView({
     if (index === run.position) {
       if (stampAt(world, run)) apply({ type: "attune" });
       else if (encounterAt(world, run)?.kind === "riddle") setRiddleOpen(true);
-      else say(voyageHint(world, run));
+      else say(voyageTask(world, run).how);
       return;
     }
     apply({ type: "step", index });
@@ -141,6 +145,11 @@ export function VoyageView({
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  const dismissCoach = () => {
+    setCoachStep(-1);
+    try { localStorage.setItem(COACH_KEY, "1"); } catch { /* keep going without remembering */ }
+  };
+
   const openMap = (id: string, freshMoon = false) => {
     const source = resolvePattern(id);
     const existing = voyages[id];
@@ -155,7 +164,8 @@ export function VoyageView({
     setRiddleOpen(false);
     setCelebrate(false);
     setConfirmMoon(false);
-    say(weatherLine(nextWorld));
+    setShowMore(false);
+    setMessage("");
   };
 
   if (!activeId || !world || !run || !pattern) {
@@ -165,48 +175,77 @@ export function VoyageView({
         <button type="button" onClick={onBack} aria-label="返回首页"><ArrowLeft aria-hidden="true" /></button>
         <div>
           <b>夜航探图</b>
-          <small>提着灯走进图案里</small>
+          <small>走进图里送信</small>
         </div>
-        <span className="voyage-seal-count" aria-label={`已盖章${seals}/${catalog.length}`}>{seals}/{catalog.length}</span>
+        <span className="voyage-seal-count" aria-label={`已完成${seals}张`}>{seals}/{catalog.length}</span>
       </header>
-      <p className="voyage-weather"><Moon aria-hidden="true" />今晚可以选一座岛。满月路更亮，逆风更费灯。</p>
+      <div className="voyage-howto">
+        <p><b>怎么玩</b></p>
+        <ol>
+          <li>选一张图走进去。</li>
+          <li>你是写着「我」的那一格。</li>
+          <li>只点旁边带白圈的豆子，一格一格走。</li>
+          <li>先拿到「信」，再走到「到」。</li>
+        </ol>
+      </div>
+      <p className="voyage-weather">先点第一张就行。</p>
       <div className="voyage-islands">
-        {catalog.map(item => {
+        {starters.map((item, order) => {
           const shown = resolvePattern(item.id);
           const state = voyages[item.id];
-          const crafted = completedIds.includes(item.id);
-          return <button key={item.id} type="button" className={`voyage-island${state?.complete ? " is-done" : ""}${state && !state.complete ? " is-mid" : ""}`} onClick={() => openMap(item.id)}>
+          return <button key={item.id} type="button" className={`voyage-island${order === 0 ? " is-start" : ""}${state?.complete ? " is-done" : ""}${state && !state.complete ? " is-mid" : ""}`} onClick={() => openMap(item.id)}>
             <PixelArt pattern={shown} />
             <span>
               <b>{item.name}</b>
-              <small>{state?.complete ? "夜航印章已盖" : state ? `已走 ${state.steps} 步` : crafted ? "图纸已拼，夜里还能再走" : "还没走过的夜路"}</small>
+              <small>{state?.complete ? "送完了" : state ? "上次走到一半" : order === 0 ? "从这里开始" : completedIds.includes(item.id) ? "图纸拼过了，夜里还能走" : "还没走过"}</small>
             </span>
-            <em>{state?.complete ? "再走" : state ? "继续" : "出发"}</em>
+            <em>{state?.complete ? "再走" : state ? "继续" : order === 0 ? "开始" : "进去"}</em>
           </button>;
         })}
       </div>
+      {extras.length > 0 && <details className="voyage-help">
+        <summary>更大的图</summary>
+        <div className="voyage-islands">
+          {extras.map(item => {
+            const shown = resolvePattern(item.id);
+            const state = voyages[item.id];
+            return <button key={item.id} type="button" className={`voyage-island${state?.complete ? " is-done" : ""}`} onClick={() => openMap(item.id)}>
+              <PixelArt pattern={shown} />
+              <span><b>{item.name}</b><small>大图，慢慢走</small></span>
+              <em>{state ? "继续" : "进去"}</em>
+            </button>;
+          })}
+        </div>
+      </details>}
     </section>;
   }
 
   const visible = visibleCells(world, run);
   const view = viewportOrigin(world, run);
   const viewSize = Math.min(VOYAGE_VIEW, world.width, world.height);
-  const progress = voyageProgress(world, run);
-  const letter = currentLetter(world, run);
+  const task = voyageTask(world, run);
   const stamp = stampAt(world, run);
   const encounter = encounterAt(world, run);
-  const percent = Math.round(((progress.letters + progress.stamps) / Math.max(1, progress.letterTotal + progress.stampTotal)) * 100);
-  const paletteKeys = Object.keys(world.palette);
-
-  const cellLabel = (index: number) => {
-    const row = Math.floor(index / world.width) + 1;
-    const col = (index % world.width) + 1;
-    if (index === run.position) return `第${row}行第${col}格，米粒在这里`;
-    if (!visible.has(index)) return `第${row}行第${col}格，还在夜里`;
-    if (run.ghosts.includes(index)) return `第${row}行第${col}格，豆桥`;
+  const walkable = new Set(neighborsOf(run.position, world.width, world.height).filter(index => {
     const symbol = world.cells[index];
-    if (symbol === ".") return `第${row}行第${col}格，空地`;
-    return `第${row}行第${col}格，${world.palette[symbol]?.name ?? "豆子"}`;
+    return symbol !== "." || run.ghosts.includes(index);
+  }));
+  const lamp = `${run.lantern}/${lanternMax(world)}`;
+  const paletteKeys = Object.keys(world.palette);
+  const lettersLeft = world.letters.filter(item => !run.letters.includes(item.id)).length;
+  const stampsLeft = world.stamps.filter(item => !run.stamps.includes(item.id)).length;
+
+  const markFor = (index: number) => {
+    if (index === run.position) return "我";
+    if (task.nextIndex === index) {
+      const dir = directionBetween(run.position, index, world.width);
+      return dir !== null ? DIR_LABELS[dir] : "走";
+    }
+    if (walkable.has(index)) return "走";
+    if (world.letters.some(item => item.from === index && !run.letters.includes(item.id) && run.carrying !== item.id)) return "信";
+    if (world.letters.some(item => item.to === index && !run.letters.includes(item.id))) return "到";
+    if (world.stamps.some(item => item.index === index && !run.stamps.includes(item.id))) return "印";
+    return "";
   };
 
   return <section className="voyage-screen voyage-play">
@@ -214,32 +253,18 @@ export function VoyageView({
       <button type="button" onClick={() => { setActiveId(null); setCelebrate(false); }} aria-label="返回夜航地图"><ArrowLeft aria-hidden="true" /></button>
       <div>
         <b>{world.name}</b>
-        <small>灯 {run.lantern}/{lanternMax(world)} · {WIND_LABELS[world.weather.wind]} · {MOON_LABELS[world.weather.moon]}</small>
+        <small>灯还剩 {lamp}</small>
       </div>
-      <button type="button" className="voyage-moon" onClick={() => setConfirmMoon(true)}>新月亮</button>
+      <button type="button" className="voyage-moon" onClick={() => setShowMore(value => !value)}>{showMore ? "收起" : "更多"}</button>
     </header>
-    <div className="voyage-progress" role="progressbar" aria-label="夜航完成度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}><i style={{ width: `${percent}%` }} /><b>{percent}%</b></div>
-    <div className="voyage-status">
-      <p><Mail aria-hidden="true" />信 {progress.letters}/{progress.letterTotal}</p>
-      <p><Compass aria-hidden="true" />印 {progress.stamps}/{progress.stampTotal}</p>
-      <p><Wind aria-hidden="true" />{weatherLine(world)}</p>
+
+    <div className="voyage-mission">
+      <small>现在做什么</small>
+      <b>{task.title}</b>
+      <p>{message || task.how}</p>
     </div>
-    {letter && <div className="voyage-letter">
-      <b>{run.carrying ? `正在送：${letter.toName}` : `下一封：${letter.fromName}`}</b>
-      <small>{constraintLine(world, letter.constraint)}</small>
-    </div>}
+
     <div className="voyage-board">
-      <div className="companion" role="status" aria-live="polite" aria-label="角色说话">
-        <img src={headerAvatar} srcSet={`${headerAvatar2x} 2x`} width="38" height="38" alt="" />
-        <p>{message || voyageHint(world, run)}</p>
-      </div>
-      <div className="voyage-minimap" aria-hidden="true" style={{ "--cols": world.width } as React.CSSProperties}>
-        {world.cells.map((cell, index) => {
-          const shown = visible.has(index);
-          const color = shown && cell !== "." ? world.palette[cell]?.color : undefined;
-          return <i key={index} className={`${index === run.position ? "is-here" : ""} ${!shown ? "is-fog" : ""} ${run.ghosts.includes(index) ? "is-ghost" : ""}`} style={color ? { background: color } : undefined} />;
-        })}
-      </div>
       <div className="voyage-grid" style={{ "--cols": viewSize } as React.CSSProperties}>
         {Array.from({ length: viewSize * viewSize }, (_, slot) => {
           const row = view.row + Math.floor(slot / viewSize);
@@ -247,73 +272,101 @@ export function VoyageView({
           if (row >= world.height || col >= world.width) return <span key={slot} className="voyage-cell is-void" aria-hidden="true" />;
           const index = row * world.width + col;
           const symbol = world.cells[index];
+          const ghost = run.ghosts.includes(index);
+          const empty = symbol === "." && !ghost;
+          if (empty && !mixArmed) return <span key={index} className="voyage-cell is-void" aria-hidden="true" />;
           const shown = visible.has(index);
           const here = index === run.position;
-          const ghost = run.ghosts.includes(index);
-          const glow = isGlowCell(world, index);
-          const gap = mixArmed && isGapCell(world, run, index);
+          const next = task.nextIndex === index;
+          const step = walkable.has(index);
           const color = shown && symbol !== "." ? world.palette[symbol]?.color : undefined;
+          const mark = shown ? markFor(index) : "";
+          const rowNo = row + 1;
+          const colNo = col + 1;
+          const name = symbol !== "." ? world.palette[symbol]?.name ?? "豆子" : "空地";
           return <button
             key={index}
             type="button"
-            aria-label={cellLabel(index)}
+            aria-label={here ? `第${rowNo}行第${colNo}格，米粒在这里` : next ? `第${rowNo}行第${colNo}格，下一步，${name}` : `第${rowNo}行第${colNo}格，${name}`}
             className={[
               "voyage-cell",
-              symbol === "." && !ghost ? "is-void" : "",
+              empty ? "is-void is-gap" : "",
               !shown ? "is-fog" : "",
               here ? "is-player" : "",
               ghost ? "is-ghost" : "",
-              glow && shown ? "is-glow" : "",
-              gap ? "is-gap" : "",
-              world.stamps.some(item => item.index === index && !run.stamps.includes(item.id)) && shown ? "has-stamp" : "",
-              world.letters.some(item => item.from === index && !run.letters.includes(item.id) && run.carrying !== item.id) && shown ? "has-mail" : "",
-              world.letters.some(item => item.to === index && !run.letters.includes(item.id)) && shown ? "has-dest" : "",
+              step && !here ? "is-step" : "",
+              next ? "is-next" : "",
             ].filter(Boolean).join(" ")}
             style={color ? { backgroundColor: color } : undefined}
             onClick={() => actOnCell(index)}
-          />;
+          >{mark ? <em>{mark}</em> : null}</button>;
         })}
       </div>
+      <p className="voyage-legend">亮圈=能走 · 「我」=你 · 「信」=去拿 · 「到」=送到</p>
     </div>
-    <div className="voyage-actions">
-      <button type="button" onClick={() => apply({ type: "burst" })}>点亮 · {BURST_COST}暖</button>
-      <button type="button" className={mixArmed ? "active" : ""} onClick={() => setMixArmed(value => !value)}>{mixArmed ? "点空格开桥" : `开桥 · ${MIX_COST}+${MIX_COST}`}</button>
-      <button type="button" onClick={() => apply({ type: "attune" })} disabled={!stamp}>取印 · {ATTUNE_COST}</button>
-    </div>
-    <div className="voyage-charges" aria-label="颜色力气">
-      {paletteKeys.map(key => (
-        <button
-          key={key}
-          type="button"
-          className={`${run.mixA === key || run.mixB === key ? "active" : ""}`}
-          aria-pressed={run.mixA === key || run.mixB === key}
-          onClick={() => {
-            const slot = !run.mixA || run.mixA === key ? "a" : "b";
-            apply({ type: "select-mix", slot, color: (run.mixA === key || run.mixB === key) ? null : key });
-            setMixArmed(true);
-          }}
-        >
-          <i style={{ background: world.palette[key].color }} />
-          <span>{world.palette[key].name}</span>
-          <small>{run.charges[key] ?? 0}</small>
-        </button>
-      ))}
-    </div>
-    {mixArmed && run.mixA && run.mixB && !canMixColors(world, run.mixA, run.mixB) && <p className="voyage-mix-note">这两种颜色混不出桥。</p>}
-    <details className="voyage-help">
-      <summary>怎么玩</summary>
-      <ul>
-        <li>点身边的豆子走路。灯会慢慢暗，走到发光的豆子就能再亮。</li>
-        <li>顺着一种颜色走，这种颜色的力气涨得更快。</li>
-        <li>力气够了就能取印、点亮黑夜，或把两种颜色混成豆桥。</li>
-        <li>送信有规矩：有的路不能踩某种颜色，有的门口要印章。</li>
-        <li>逆风更费灯。顺着今晚的风走，信也更容易送到。</li>
-      </ul>
-    </details>
-    <button type="button" className="voyage-craft" onClick={() => onCraft(pattern.id)}>去拼这张图纸</button>
+
+    <div className="voyage-score">信还差 {lettersLeft} 封 · 印还差 {stampsLeft} 枚</div>
+
+    {task.action === "attune" && stamp && (
+      <button type="button" className="voyage-primary" onClick={() => apply({ type: "attune" })}>
+        拿走印章
+      </button>
+    )}
+    {task.action === "bridge" && (
+      <button type="button" className={`voyage-primary${mixArmed ? " is-on" : ""}`} onClick={() => setMixArmed(true)}>
+        {mixArmed ? "再点两颗豆子中间的空格" : "搭一座桥"}
+      </button>
+    )}
+    {run.lantern <= 2 && (
+      <button type="button" className="voyage-secondary" onClick={() => apply({ type: "burst" })}>
+        灯快灭了，点亮附近
+      </button>
+    )}
+
+    {showMore && <div className="voyage-more">
+      <button type="button" onClick={() => apply({ type: "burst" })}>点亮附近 · {BURST_COST}点暖色</button>
+      <button type="button" onClick={() => setMixArmed(value => !value)}>{mixArmed ? "取消搭桥" : "搭一座桥"}</button>
+      <button type="button" disabled={!stamp} onClick={() => apply({ type: "attune" })}>拿走印章 · {ATTUNE_COST}</button>
+      <button type="button" onClick={() => setConfirmMoon(true)}>重新开始</button>
+      <button type="button" onClick={() => onCraft(pattern.id)}>去拼这张图纸</button>
+      <div className="voyage-charges" aria-label="颜色点数">
+        {paletteKeys.map(key => (
+          <button
+            key={key}
+            type="button"
+            className={run.mixA === key || run.mixB === key ? "active" : ""}
+            onClick={() => {
+              const slot = !run.mixA || run.mixA === key ? "a" : "b";
+              apply({ type: "select-mix", slot, color: (run.mixA === key || run.mixB === key) ? null : key });
+              setMixArmed(true);
+            }}
+          >
+            <i style={{ background: world.palette[key].color }} />
+            <span>{world.palette[key].name}</span>
+            <small>{run.charges[key] ?? 0}</small>
+          </button>
+        ))}
+      </div>
+      {mixArmed && run.mixA && run.mixB && !canMixColors(world, run.mixA, run.mixB) && <p className="voyage-mix-note">这两种颜色混不出桥。</p>}
+    </div>}
+
+    {coachStep >= 0 && <div className="voyage-sheet voyage-coach" role="dialog" aria-modal="true" aria-label="怎么玩">
+      <section>
+        <img src={headerAvatar} srcSet={`${headerAvatar2x} 2x`} width="48" height="48" alt="" />
+        {coachStep === 0
+          ? <><h2>你是「我」</h2><p>亮圈那一格就是你。一次只能点旁边一格，像走格子。</p></>
+          : <><h2>先拿信，再送到</h2><p>走到写着「信」的豆子会捡起来。再走到写着「到」的绿点，信就送出去了。</p></>}
+        <div className="voyage-sheet-actions">
+          {coachStep === 0
+            ? <button type="button" onClick={() => setCoachStep(1)}>下一句</button>
+            : <button type="button" onClick={dismissCoach}><Check aria-hidden="true" />开始走</button>}
+        </div>
+      </section>
+    </div>}
 
     {riddleOpen && encounter?.kind === "riddle" && <div className="voyage-sheet" role="dialog" aria-modal="true" aria-label="猜颜色">
       <section>
+        <h2>猜一猜</h2>
         <p>{encounter.prompt}</p>
         <div>
           {paletteKeys.map(key => (
@@ -327,13 +380,13 @@ export function VoyageView({
       </section>
     </div>}
 
-    {confirmMoon && <div className="voyage-sheet" role="dialog" aria-modal="true" aria-label="等新月亮">
+    {confirmMoon && <div className="voyage-sheet" role="dialog" aria-modal="true" aria-label="重新开始">
       <section>
-        <h2>等新月亮？</h2>
-        <p>今晚的风和信会重排，已经走的路会清掉。</p>
+        <h2>从头走？</h2>
+        <p>已经走的路会清掉。</p>
         <div className="voyage-sheet-actions">
-          <button type="button" onClick={() => setConfirmMoon(false)}>继续今晚</button>
-          <button type="button" className="danger" onClick={() => openMap(pattern.id, true)}>重新出发</button>
+          <button type="button" onClick={() => setConfirmMoon(false)}>继续走</button>
+          <button type="button" className="danger" onClick={() => openMap(pattern.id, true)}>重新开始</button>
         </div>
       </section>
     </div>}
@@ -341,11 +394,11 @@ export function VoyageView({
     {celebrate && <div className="voyage-sheet voyage-win" role="dialog" aria-modal="true" aria-label="夜航完成">
       <section>
         <div className="celebration-icons" aria-hidden="true">{Array.from({ length: 8 }, (_, index) => <Sparkles key={index} />)}</div>
-        <h2>夜航印章盖好了</h2>
-        <p>{world.name}的信都送到了。灯还亮着。</p>
+        <h2>送完啦</h2>
+        <p>{world.name}的信都送到了。</p>
         <div className="voyage-sheet-actions">
           <button type="button" onClick={() => { setCelebrate(false); setActiveId(null); }}><Check aria-hidden="true" />回地图</button>
-          <button type="button" onClick={() => onCraft(pattern.id)}>去拼实体图纸</button>
+          <button type="button" onClick={() => onCraft(pattern.id)}>去拼这张图纸</button>
         </div>
       </section>
     </div>}

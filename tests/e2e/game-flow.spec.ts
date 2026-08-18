@@ -59,10 +59,15 @@ test("three offline modes provide distinct, honest interactions", async ({ page 
 
 test("night voyage opens a walkable bead map and remembers the first step", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /提着灯走进图案里/ }).click();
+  await page.getByRole("button", { name: /走进图里送信/ }).click();
   await expect(page.getByRole("button", { name: new RegExp(`^${pattern.name}`) })).toBeVisible();
   await page.getByRole("button", { name: new RegExp(`^${pattern.name}`) }).click();
-  await expect(page.getByText(/灯 \d+\/\d+/)).toBeVisible();
+  const nextTip = page.getByRole("button", { name: /下一句/ });
+  if (await nextTip.isVisible().catch(() => false)) {
+    await nextTip.click();
+    await page.getByRole("button", { name: /开始走/ }).click();
+  }
+  await expect(page.getByText(/灯还剩 \d+\/\d+/)).toBeVisible();
   const player = page.getByRole("button", { name: /米粒在这里/ });
   await expect(player).toBeVisible();
   const playerBox = await player.boundingBox();

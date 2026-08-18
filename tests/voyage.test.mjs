@@ -13,6 +13,7 @@ import {
   createVoyageRun,
   currentGoalIndex,
   isGapCell,
+  voyageTask,
   neighborsOf,
   reduceVoyage,
   sanitizeVoyageRun,
@@ -256,4 +257,18 @@ test("current goal prefers the carried letter destination", () => {
   const letter = world.letters[0];
   const run = { ...createVoyageRun(world), carrying: letter.id };
   assert.equal(currentGoalIndex(world, run), letter.to);
+});
+
+test("the coach task tells the courier the next tap in plain words", () => {
+  const world = buildVoyageWorld(tiny, voyageSeedFor(tiny.id, "2026-08-18"));
+  const start = createVoyageRun(world);
+  const task = voyageTask(world, start);
+  assert.ok(task.title.length >= 2);
+  assert.match(task.how, /信|印|走|圈/);
+  if (task.action === "walk" && task.nextIndex !== null) {
+    assert.ok(neighborsOf(start.position, world.width, world.height).includes(task.nextIndex));
+  }
+  const onStamp = { ...start, position: world.stamps[0].index, stamps: [] };
+  assert.equal(voyageTask(world, onStamp).action, "attune");
+  assert.match(voyageTask(world, onStamp).how, /印章/);
 });
