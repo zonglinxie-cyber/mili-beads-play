@@ -21,6 +21,7 @@ test("renders the complete mobile bead game shell", async () => {
   const html = await fetch(`http://127.0.0.1:${port}`).then(r => r.text());
   assert.match(html, /米粒拼豆社/);
   assert.match(html, /本周精选/);
+  assert.match(html, /夜航探图/);
   assert.match(html, /再选一张/);
   assert.match(html, /图纸/);
   for (const pattern of PATTERNS) assert.match(html, new RegExp(pattern.name));

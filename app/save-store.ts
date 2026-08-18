@@ -1,5 +1,10 @@
-import { FREE_PALETTE, PATTERNS } from "./patterns.ts";
+import { emptyDesk, sanitizeDesk, type DeskSave } from "./desk.ts";
+import { FREE_PALETTE, PLAYABLE_PATTERNS } from "./patterns.ts";
 import { isAllowedStorySelection, type StorySelection } from "./play-content.ts";
+import { sanitizeVoyages, type VoyageRun } from "./voyage.ts";
+
+export type { DeskItem, DeskSave } from "./desk.ts";
+export type { VoyageRun } from "./voyage.ts";
 
 export type GameSave = {
   completed?: string[];
@@ -9,6 +14,8 @@ export type GameSave = {
   colorways?: Record<string, string>;
   stories?: Record<string, StorySelection>;
   drawings?: FreeDrawing[];
+  desk?: DeskSave;
+  voyages?: Record<string, VoyageRun>;
 };
 export type { StorySelection };
 
@@ -38,6 +45,8 @@ export type SaveSnapshot = {
   colorways: Record<string, string>;
   stories: Record<string, StorySelection>;
   drawings: FreeDrawing[];
+  desk: DeskSave;
+  voyages: Record<string, VoyageRun>;
 };
 
 type ReadableStorage = Pick<Storage, "getItem">;
@@ -49,7 +58,7 @@ export const DELETE_TOMBSTONE = JSON.stringify({ version: 1, pending: true });
 export const LEGACY_CLEAN_KEY = "mili-game-legacy-clean-v1";
 export const LEGACY_CLEAN_VALUE = "1";
 
-const BOARD_SIZE = 18;
+const FREE_BOARD_SIZE = 18;
 
 export const emptySaveSnapshot = (): SaveSnapshot => ({
   completed: [],
@@ -59,6 +68,8 @@ export const emptySaveSnapshot = (): SaveSnapshot => ({
   colorways: {},
   stories: {},
   drawings: [],
+  desk: emptyDesk(),
+  voyages: {},
 });
 
 export const normalizeSave = (value: unknown): SaveSnapshot => {
@@ -71,8 +82,9 @@ export const normalizeSave = (value: unknown): SaveSnapshot => {
   if (source.colorways !== undefined && (!source.colorways || typeof source.colorways !== "object" || Array.isArray(source.colorways))) throw new Error("colorways must be an object");
   if (source.stories !== undefined && (!source.stories || typeof source.stories !== "object" || Array.isArray(source.stories))) throw new Error("stories must be an object");
   if (source.drawings !== undefined && !Array.isArray(source.drawings)) throw new Error("drawings must be an array");
+  if (source.voyages !== undefined && (!source.voyages || typeof source.voyages !== "object" || Array.isArray(source.voyages))) throw new Error("voyages must be an object");
 
-  const validIds = new Set(PATTERNS.map(pattern => pattern.id));
+  const validIds = new Set(PLAYABLE_PATTERNS.map(pattern => pattern.id));
   const completed = Array.isArray(source.completed)
     ? Array.from(new Set(source.completed.filter((id): id is string => typeof id === "string" && validIds.has(id))))
     : [];
@@ -81,9 +93,10 @@ export const normalizeSave = (value: unknown): SaveSnapshot => {
     : [];
   const boards: Record<string, string[]> = {};
   if (source.boards && typeof source.boards === "object" && !Array.isArray(source.boards)) {
-    for (const pattern of PATTERNS) {
+    for (const pattern of PLAYABLE_PATTERNS) {
       const candidate = (source.boards as Record<string, unknown>)[pattern.id];
-      if (!Array.isArray(candidate) || candidate.length !== BOARD_SIZE * BOARD_SIZE) continue;
+      const expectedSize = pattern.rows.length * pattern.rows[0].length;
+      if (!Array.isArray(candidate) || candidate.length !== expectedSize) continue;
       const target = pattern.rows.join("").split("");
       boards[pattern.id] = candidate.map((cell, index) => typeof cell === "string" && cell === target[index] ? cell : ".");
     }
@@ -92,7 +105,7 @@ export const normalizeSave = (value: unknown): SaveSnapshot => {
   const effects = new Set<string>(STAGE_EFFECT_IDS);
   const stages: Record<string, StageSelection> = {};
   if (source.stages && typeof source.stages === "object" && !Array.isArray(source.stages)) {
-    for (const pattern of PATTERNS) {
+    for (const pattern of PLAYABLE_PATTERNS) {
       const candidate = (source.stages as Record<string, unknown>)[pattern.id];
       if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) continue;
       const stage = candidate as Record<string, unknown>;
@@ -103,7 +116,7 @@ export const normalizeSave = (value: unknown): SaveSnapshot => {
   }
   const colorways: Record<string, string> = {};
   if (source.colorways && typeof source.colorways === "object" && !Array.isArray(source.colorways)) {
-    for (const pattern of PATTERNS) {
+    for (const pattern of PLAYABLE_PATTERNS) {
       const candidate = (source.colorways as Record<string, unknown>)[pattern.id];
       if (typeof candidate !== "string") continue;
       const options = (pattern as typeof pattern & { colorways?: { id: string }[] }).colorways;
@@ -114,7 +127,7 @@ export const normalizeSave = (value: unknown): SaveSnapshot => {
   }
   const stories: Record<string, StorySelection> = {};
   if (source.stories && typeof source.stories === "object" && !Array.isArray(source.stories)) {
-    for (const pattern of PATTERNS) {
+    for (const pattern of PLAYABLE_PATTERNS) {
       const candidate = (source.stories as Record<string, unknown>)[pattern.id];
       if (isAllowedStorySelection(pattern.id, candidate)) stories[pattern.id] = { who: candidate.who, doing: candidate.doing };
     }
@@ -129,7 +142,7 @@ export const normalizeSave = (value: unknown): SaveSnapshot => {
       const candidate = item as Record<string, unknown>;
       if (typeof candidate.id !== "string" || !/^draw-[a-z0-9]+$/.test(candidate.id) || seen.has(candidate.id)) continue;
       if (typeof candidate.name !== "string" || !candidate.name.trim() || candidate.name.length > 20) continue;
-      if (!Array.isArray(candidate.cells) || candidate.cells.length !== BOARD_SIZE * BOARD_SIZE) continue;
+      if (!Array.isArray(candidate.cells) || candidate.cells.length !== FREE_BOARD_SIZE * FREE_BOARD_SIZE) continue;
       const cells = candidate.cells.map(cell => typeof cell === "string" && symbols.has(cell) ? cell : ".");
       const scene = typeof candidate.scene === "string" && scenes.has(candidate.scene) ? candidate.scene as StageSceneId : STAGE_SCENE_IDS[0];
       const effect = typeof candidate.effect === "string" && effects.has(candidate.effect) ? candidate.effect as StageEffectId : STAGE_EFFECT_IDS[0];
@@ -138,7 +151,12 @@ export const normalizeSave = (value: unknown): SaveSnapshot => {
       drawings.push({ id: candidate.id, name: candidate.name, cells, scene, effect, updatedAt });
     }
   }
-  return { completed, boards, activityDates, stages, colorways, stories, drawings };
+  const desk = sanitizeDesk(source.desk, {
+    completed,
+    drawingIds: new Set(drawings.map(item => item.id)),
+  });
+  const voyages = sanitizeVoyages(source.voyages, PLAYABLE_PATTERNS);
+  return { completed, boards, activityDates, stages, colorways, stories, drawings, desk, voyages };
 };
 
 export const parseSaveSnapshot = (raw: string): SaveSnapshot => normalizeSave(JSON.parse(raw));

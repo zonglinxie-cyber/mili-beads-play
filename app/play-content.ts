@@ -249,6 +249,36 @@ const START_LINES: Record<string, Record<BuildMode, string>> = {
     mobile: "先插吸管，再画出杯子和珍珠。",
     mystery: "剪影是一杯奶茶。揭开就看见珍珠。",
   },
+  "dragon-castle": {
+    assistant: "先记下城堡塔楼，再沿着飞龙绕一圈。",
+    mobile: "先拼城堡，再沿着飞龙绕过去。",
+    mystery: "剪影里有城堡。揭开一层，飞龙就会亮。",
+  },
+  "rocket-launch": {
+    assistant: "先记下发射塔，再从下往上拼火箭。",
+    mobile: "塔在右边。从火焰往上拼到火箭尖。",
+    mystery: "剪影是一枚火箭。揭开就看见火焰。",
+  },
+  "tiger-shark": {
+    assistant: "先记下虎鲨身体，再补上条纹和水花。",
+    mobile: "头朝右。先拼身体，再点上牙齿。",
+    mystery: "剪影里有一条鲨鱼。揭开就看见浪。",
+  },
+  "robot-guard": {
+    assistant: "先记下红色眼睛，再向两边伸出手臂。",
+    mobile: "先拼脑袋和胸口，再接上双手双脚。",
+    mystery: "剪影是一个机甲。揭开眼睛会亮。",
+  },
+  "retro-gamepad": {
+    assistant: "先记下外轮廓，再放入十字键和按钮。",
+    mobile: "先拼灰色手柄，再点上彩色按钮。",
+    mystery: "剪影是一个手柄。揭开按钮会亮。",
+  },
+  "ninja-moon": {
+    assistant: "先记下层层屋顶，再挂上灯笼和月亮。",
+    mobile: "先拼屋顶，再点亮灯笼和月亮。",
+    mystery: "剪影是一座城楼。揭开月亮会亮。",
+  },
 };
 
 const COLOR_DONE_LINES: Record<string, string> = {
@@ -264,6 +294,12 @@ const COLOR_DONE_LINES: Record<string, string> = {
   "bow-cat": "{color}这块好了。小猫还在等{nextColor}。",
   "berry-sundae": "{color}这一层好了。下一球是{nextColor}。",
   "berry-boba": "{color}倒进去了。杯子还在等{nextColor}。",
+  "dragon-castle": "{color}好了。城堡还在等{nextColor}。",
+  "rocket-launch": "{color}点着了。接着拼{nextColor}。",
+  "tiger-shark": "{color}冲过去了。下一段是{nextColor}。",
+  "robot-guard": "{color}装好了。机甲还在等{nextColor}。",
+  "retro-gamepad": "{color}按下去了。下一颗是{nextColor}。",
+  "ninja-moon": "{color}亮了。城楼还在等{nextColor}。",
 };
 
 const MYSTERY_LINES: Record<string, string> = {
@@ -279,6 +315,12 @@ const MYSTERY_LINES: Record<string, string> = {
   "bow-cat": "揭开了{color}！蝴蝶结还藏着{nextColor}。",
   "berry-sundae": "揭开了{color}！甜筒还藏着{nextColor}。",
   "berry-boba": "揭开了{color}！珍珠还藏着{nextColor}。",
+  "dragon-castle": "揭开了{color}！飞龙还藏着{nextColor}。",
+  "rocket-launch": "揭开了{color}！火箭还藏着{nextColor}。",
+  "tiger-shark": "揭开了{color}！浪花还藏着{nextColor}。",
+  "robot-guard": "揭开了{color}！机甲还藏着{nextColor}。",
+  "retro-gamepad": "揭开了{color}！按钮还藏着{nextColor}。",
+  "ninja-moon": "揭开了{color}！月亮还藏着{nextColor}。",
 };
 
 const fill = (template: string, vars: CompanionVars) =>
@@ -337,6 +379,7 @@ const seededShuffle = <T,>(items: T[], seed: number) => {
 };
 
 export const buildSpotPuzzle = (pattern: SpotSource, homeId?: string): SpotPuzzle | null => {
+  if (!pattern.colorways || pattern.colorways.length < 2) return null;
   const home = pattern.colorways.find(option => option.id === homeId) ?? pattern.colorways[0];
   const other = pattern.colorways.find(option => option.id !== home?.id);
   if (!home || !other) return null;

@@ -14,6 +14,7 @@ import {
   storyWhoOptions,
 } from "../app/play-content.ts";
 import { STAGE_EFFECT_IDS, STAGE_SCENE_IDS } from "../app/save-store.ts";
+import { childVoyageCorpus } from "../app/voyage.ts";
 
 test("every catalog pattern has offline who/doing blocks and safe companion lines", () => {
   for (const pattern of PATTERNS) {
@@ -64,7 +65,13 @@ test("completed works can generate a deterministic colorway spot-the-difference 
   assert.match(companionLine("scarf-sprint", "spot", "start"), /队服/);
 });
 
+test("patterns without extra colorways skip the spot-the-difference puzzle", () => {
+  assert.equal(buildSpotPuzzle({ id: "solo", rows: ["AB"], colorways: [] }), null);
+  assert.equal(buildSpotPuzzle({ id: "solo", rows: ["AB"], colorways: [{ id: "only", name: "独色", palette: {} }] }), null);
+});
+
 test("child-facing companion and story copy contains no adult finishing recipes", () => {
   assert.doesNotMatch(childPlayContentCorpus(), CHILD_PATTERN_FORBIDDEN);
   assert.doesNotMatch(childPlayContentCorpus(), /https?:\/\//);
+  assert.doesNotMatch(childVoyageCorpus(), CHILD_PATTERN_FORBIDDEN);
 });

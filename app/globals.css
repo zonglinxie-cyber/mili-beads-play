@@ -230,3 +230,138 @@ button:focus-visible,a:focus-visible{outline:3px solid #d15d55;outline-offset:3p
 .draw-thumb span{font-size:10px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .works-drawings{margin-top:24px}
 .works-drawings h2{font-size:14px;margin:0 0 10px;padding:0 4px}
+
+/* 进阶挑战入口与大图棋盘 */
+.home-advanced-block{margin:16px 0 0;padding:12px 10px 14px;border-radius:22px;background:linear-gradient(135deg,#fff3e0,#fce4ec);border:2px solid #ff8a65}
+.home-advanced-block h2{color:#c43e11}
+.home-advanced-block .home-catalog-hint{color:#8d4a3a}
+.home-tile.advanced-tile{border-color:#ff8a65}
+.play-board.advanced{overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+.touch-grid.advanced{max-width:none;width:max(100%,580px);gap:1.5px;padding:2px;touch-action:manipulation}
+.touch-grid.advanced button,.touch-grid.advanced span{min-height:20px;min-width:20px;border-radius:2px}
+.stage-character-advanced{left:10%;right:10%;bottom:2%}
+.stage-character-advanced>.layered-art{width:80%}
+.stage-preview.advanced-stage .stage-character-advanced{left:8%;right:8%}
+
+.desk-world{margin:4px 0 18px;padding:12px;border-radius:22px;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow)}
+.desk-head small{display:block;font-size:11px;font-weight:900;letter-spacing:1px;color:#a15f5f}
+.desk-head h2{margin:2px 0 4px;font-size:20px}
+.desk-head p{margin:0 0 10px;font-size:13px;color:var(--muted);font-weight:700}
+.desk-stage{position:relative;aspect-ratio:4/3;overflow:hidden;border-radius:18px;background:#241f36;isolation:isolate}
+.desk-stage .stage-background{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.desk-stage .stage-effect{position:absolute;inset:0;z-index:2;pointer-events:none}
+.desk-slots{position:absolute;inset:10% 4% 8%;z-index:3;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(2,1fr);gap:6px}
+.desk-slot{min-width:0;min-height:0;border-radius:12px;background:#fff8;border:2px solid #fff6;padding:4px 3px 3px;display:grid;align-content:end;justify-items:center;gap:2px;color:var(--ink)}
+.desk-slot.empty{background:#fff3;border-style:dashed}
+.desk-slot.selected{border-color:#fff;box-shadow:0 0 0 2px var(--purple)}
+.desk-slot.ghost{background:#2a2438a6;color:#fff8ed}
+.desk-slot .desk-art{width:100%;background:transparent;padding:0;gap:0}
+.desk-slot .desk-art i.empty{background:transparent}
+.desk-slot .desk-art i.silhouette{background:#fff4d4;box-shadow:inset 0 -1px #0002}
+.desk-slot span{font-size:9px;font-weight:900;line-height:1.15;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.desk-tools{margin-top:10px}
+.desk-move{display:flex;gap:8px;margin-bottom:10px}
+.desk-move button{min-height:44px;flex:1;border-radius:12px;background:#eee5f6;color:var(--purple);font-size:13px;font-weight:900}
+.desk-move button:disabled{opacity:.38}
+.desk-tools fieldset{border:0;padding:0;margin:0 0 8px}
+.desk-tools legend{font-size:12px;font-weight:900;margin-bottom:6px}
+.desk-tools fieldset>div{display:flex;flex-wrap:wrap;gap:6px}
+.desk-tools fieldset button{min-height:40px;padding:0 10px;border-radius:11px;background:#f5efe6;font-size:12px;font-weight:800}
+.desk-tools fieldset button.active{background:var(--purple);color:#fff}
+.finish-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.home-story .mystery-art{width:100%;background:transparent}
+.home-story .mystery-art i.empty{background:transparent}
+.home-story .mystery-art i.silhouette{background:#f0d7a6}
+.playmode-options>button:nth-child(4){border-color:#7b8ad4;background:#eceefe}
+
+.home-voyage{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;width:100%;margin:0 0 14px;padding:12px;border-radius:22px;background:linear-gradient(135deg,#1e1a33,#43356a);border:2px solid #8b7cc9;color:#fff8ed;text-align:left;box-shadow:var(--shadow)}
+.home-voyage-art{width:64px;height:64px;display:grid;place-items:center;border-radius:16px;background:#2b2544}
+.home-voyage-art svg{width:28px;height:28px;color:#f4c95f}
+.home-voyage>span{display:grid;gap:2px;min-width:0}
+.home-voyage small{font-size:11px;font-weight:900;letter-spacing:1px;color:#f3bd75}
+.home-voyage b{font-size:18px;line-height:1.2}
+.home-voyage i{font-style:normal;font-size:12px;color:#d7cce8;font-weight:700}
+.home-voyage em{font-style:normal;font-size:13px;font-weight:900;background:#f4c95f;color:#2a2140;border-radius:12px;padding:10px 12px;white-space:nowrap}
+
+.voyage-screen{margin:0 -16px;min-height:100dvh;background:linear-gradient(180deg,#161325,#2a2140 42%,#3a2d52);color:#fff8ed;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+.voyage-header{min-height:61px;display:grid;grid-template-columns:42px 1fr auto;align-items:center;background:#1b1730f2;padding:env(safe-area-inset-top,0px) 10px 0;position:sticky;top:0;z-index:25;border-bottom:1px solid #3d3458}
+.voyage-header>button{min-width:44px;min-height:44px;border-radius:11px;background:#332b4d;color:#efe7ff;display:grid;place-items:center}
+.voyage-header>button svg{width:22px;height:22px}
+.voyage-header div{text-align:center}
+.voyage-header b{display:block;font-size:14px}
+.voyage-header small{display:block;font-size:10px;color:#c7bdd8}
+.voyage-seal-count,.voyage-moon{min-height:44px;padding:0 10px;border-radius:11px;background:#f4c95f;color:#2a2140;font-size:12px;font-weight:900;display:grid;place-items:center}
+.voyage-weather{display:flex;align-items:center;gap:8px;margin:12px 16px 8px;font-size:13px;font-weight:800;color:#efe4c8}
+.voyage-weather svg{width:16px;height:16px;flex:none}
+.voyage-islands{display:grid;gap:10px;padding:8px 12px 20px}
+.voyage-island{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;width:100%;min-height:84px;padding:10px;border-radius:18px;background:#2b2544;border:2px solid #4a3f6b;color:#fff8ed;text-align:left}
+.voyage-island.is-mid{border-color:#8b7cc9}
+.voyage-island.is-done{border-color:#f4c95f}
+.voyage-mini-art{width:64px;height:64px;border-radius:12px;overflow:hidden;background:#1a1628}
+.voyage-mini-art i.empty{background:transparent}
+.voyage-island>span{display:grid;gap:3px;min-width:0}
+.voyage-island b{font-size:15px}
+.voyage-island small{font-size:11px;color:#c7bdd8}
+.voyage-island em{font-style:normal;font-size:12px;font-weight:900;background:#8b7cc9;color:#fff;border-radius:10px;padding:8px 10px}
+.voyage-island.is-done em{background:#f4c95f;color:#2a2140}
+
+.voyage-progress{height:23px;background:#2d2744;position:relative}
+.voyage-progress i{display:block;height:100%;background:linear-gradient(90deg,#7b8ad4,#f4c95f);transition:width .25s}
+.voyage-progress b{position:absolute;inset:0;display:grid;place-items:center;font-size:10px}
+.voyage-status{display:grid;grid-template-columns:auto auto 1fr;gap:8px;padding:8px 12px;font-size:11px;font-weight:800}
+.voyage-status p{margin:0;display:flex;align-items:center;gap:4px}
+.voyage-status svg{width:13px;height:13px}
+.voyage-letter{margin:0 12px 8px;padding:10px 12px;border-radius:14px;background:#3a2f58;display:grid;gap:3px}
+.voyage-letter b{font-size:13px}
+.voyage-letter small{font-size:11px;color:#d7cce8}
+.voyage-board{padding:8px 10px 12px}
+.voyage-board .companion{display:flex;gap:8px;align-items:center;margin:0 auto 10px;max-width:420px;padding:8px 10px;border-radius:16px;background:#241d38cc;color:#fff8ed}
+.voyage-board .companion p{margin:0;font-size:13px;line-height:1.45;font-weight:800}
+.voyage-minimap{width:min(42vw,160px);margin:0 auto 10px;display:grid;grid-template-columns:repeat(var(--cols),1fr);gap:1px;padding:4px;border-radius:8px;background:#141022}
+.voyage-minimap i{aspect-ratio:1;background:#2a2440}
+.voyage-minimap i.is-fog{background:#1a1628}
+.voyage-minimap i.is-here{box-shadow:inset 0 0 0 1px #f4c95f;background:#fff8ed}
+.voyage-minimap i.is-ghost{background:#8b7cc9}
+.voyage-grid{width:min(100%,420px);margin:auto;display:grid;grid-template-columns:repeat(var(--cols),1fr);gap:5px}
+.voyage-cell{aspect-ratio:1;min-height:44px;min-width:0;border-radius:50%;background:#2a2440;box-shadow:inset 0 -2px 2px #0004;padding:0}
+.voyage-cell.is-void{border-radius:8px;opacity:.35}
+.voyage-cell.is-fog{filter:brightness(.28);opacity:.7}
+.voyage-cell.is-player{box-shadow:0 0 0 3px #fff8ed,0 0 16px #f4c95f}
+.voyage-cell.is-ghost{border-radius:12px;background:#8b7cc9;box-shadow:inset 0 0 0 2px #fff6}
+.voyage-cell.is-glow{box-shadow:inset 0 0 10px #fff6,0 0 8px #f4c95f88}
+.voyage-cell.is-gap{box-shadow:0 0 0 3px #f4c95f}
+.voyage-cell.has-stamp{box-shadow:inset 0 0 0 3px #fff3,0 0 0 2px #f4c95f}
+.voyage-cell.has-mail:after,.voyage-cell.has-dest:after{content:"";position:absolute;width:8px;height:8px;border-radius:2px;background:#fff8ed}
+.voyage-cell.has-mail,.voyage-cell.has-dest{position:relative}
+.voyage-cell.has-dest:after{border-radius:50%;background:#7bdbb1}
+.voyage-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px 12px}
+.voyage-actions button{min-height:48px;border-radius:14px;background:#3a2f58;color:#fff8ed;font-size:12px;font-weight:900}
+.voyage-actions button.active{background:#f4c95f;color:#2a2140}
+.voyage-actions button:disabled{opacity:.4}
+.voyage-charges{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 12px 12px}
+.voyage-charges button{min-height:54px;border-radius:14px;background:#241d38;border:2px solid #4a3f6b;color:#fff8ed;display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:6px;padding:6px 8px;text-align:left}
+.voyage-charges button.active{border-color:#f4c95f;background:#3a2f58}
+.voyage-charges i{width:18px;height:18px;border-radius:50%;box-shadow:inset 0 -2px #0003}
+.voyage-charges span{font-size:11px;font-weight:900}
+.voyage-charges small{font-size:12px;font-weight:900;color:#f4c95f}
+.voyage-mix-note{margin:0 12px 10px;font-size:12px;font-weight:800;color:#f3bd75}
+.voyage-help{margin:0 12px 12px;border-radius:14px;background:#241d38;padding:0 12px 10px;color:#d7cce8}
+.voyage-help summary{min-height:44px;display:flex;align-items:center;font-size:13px;font-weight:900;color:#fff8ed}
+.voyage-help ul{margin:0;padding-left:18px;font-size:12px;line-height:1.55}
+.voyage-craft{display:block;width:calc(100% - 24px);margin:0 12px 16px;min-height:48px;border-radius:14px;background:#eee5f6;color:var(--purple);font-size:13px;font-weight:900}
+.voyage-sheet{position:fixed;inset:0;z-index:90;background:#161325d8;display:grid;place-items:center;padding:16px}
+.voyage-sheet section{width:min(92vw,420px);border-radius:22px;background:#2b2544;padding:20px;color:#fff8ed;text-align:center;box-shadow:0 22px 70px #0006}
+.voyage-sheet h2{margin:0 0 8px;font-size:22px}
+.voyage-sheet p{margin:0 0 14px;font-size:13px;line-height:1.55;color:#d7cce8}
+.voyage-sheet section>div{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.voyage-sheet section>div button{min-height:48px;border-radius:12px;background:#3a2f58;color:#fff8ed;font-weight:900;display:flex;align-items:center;justify-content:center;gap:6px}
+.voyage-sheet section>div button i{width:16px;height:16px;border-radius:50%}
+.voyage-sheet-close,.voyage-sheet-actions{margin-top:12px}
+.voyage-sheet-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.voyage-sheet-actions button{min-height:48px;border-radius:12px;background:#eee5f6;color:var(--purple);font-weight:900}
+.voyage-sheet-actions button.danger,.voyage-sheet-actions button:last-child{background:#f4c95f;color:#2a2140}
+.voyage-win section{position:relative;overflow:hidden}
+
+@media(max-width:370px){.voyage-screen{margin-left:-11px;margin-right:-11px}.voyage-grid{gap:4px}.voyage-charges{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:600px){.voyage-screen{margin-left:-24px;margin-right:-24px}.voyage-islands{grid-template-columns:1fr 1fr}}
+

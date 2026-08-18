@@ -1,4 +1,4 @@
-import { PATTERNS } from "./patterns";
+import { PATTERNS } from "./patterns.ts";
 
 export type StoryPage = {
   kicker: string;

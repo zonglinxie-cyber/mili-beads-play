@@ -229,7 +229,16 @@ export function migrateLegacyPatternMetadata(
   });
 }
 
-export const formatEstimatedMinutes = (range: [number, number]) => `预计摆豆 ${range[0]}–${range[1]} 分钟`;
+export const formatEstimatedMinutes = (range: [number, number]) => {
+  if (range[0] >= 60) {
+    const hours = (minutes: number) => {
+      const value = Math.round(minutes / 30) / 2;
+      return Number.isInteger(value) ? String(value) : value.toFixed(1);
+    };
+    return `预计摆豆 ${hours(range[0])}–${hours(range[1])} 小时`;
+  }
+  return `预计摆豆 ${range[0]}–${range[1]} 分钟`;
+};
 
 export function materialPlan(pattern: PatternMetadataInput): MaterialPlanRow[] {
   const counts = colorCounts(pattern);

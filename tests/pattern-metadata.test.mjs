@@ -32,6 +32,8 @@ test("difficulty axes are deterministic and explain real sources of effort", () 
   assert.ok(presentation.estimatedMinutes[0] < presentation.estimatedMinutes[1]);
   assert.match(presentation.difficultyWhy, /5 颗、3 色、2 处相邻换色/);
   assert.match(formatEstimatedMinutes(presentation.estimatedMinutes), /^预计摆豆 \d+–\d+ 分钟$/);
+  assert.equal(formatEstimatedMinutes([90, 150]), "预计摆豆 1.5–2.5 小时");
+  assert.equal(formatEstimatedMinutes([60, 120]), "预计摆豆 1–2 小时");
 });
 
 test("material plan states required plus reserve equals recommended for every colour", () => {

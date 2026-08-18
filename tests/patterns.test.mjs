@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { PATTERNS, connectedComponents, targetCount } from "../app/patterns.ts";
+import { PATTERNS, ADVANCED_PATTERNS, connectedComponents, targetCount } from "../app/patterns.ts";
 
 const FIRST_RELEASE_IDS = ["scarf-sprint", "heart-frame", "bow-cat", "berry-sundae", "berry-boba", "balloon-bear", "moon-rabbit", "sushi-train", "whale-castle", "fox-kite", "otter-sub", "skate-duck"];
 const REDTEAM_EXCLUDED_IDS = ["rocket-cat", "star-dragon", "frog-post", "rainbow-duck", "penguin-igloo"];
@@ -65,5 +65,23 @@ test("animation layers, safe making guidance and provenance are complete", () =>
     assert.ok(pattern.provenance, `${pattern.id} provenance`);
     assert.match(pattern.provenance.gridHash, /^[0-9a-f]{64}$/i, `${pattern.id} grid hash`);
     assert.match(pattern.provenance.sourceHash, /^[0-9a-f]{64}$/i, `${pattern.id} source hash`);
+  }
+});
+
+test("advanced catalog is a separate 29×29 challenge pool", () => {
+  assert.equal(ADVANCED_PATTERNS.length, 6);
+  assert.equal(new Set(ADVANCED_PATTERNS.map(pattern => pattern.id)).size, ADVANCED_PATTERNS.length, "unique advanced ids");
+  const regularIds = new Set(PATTERNS.map(pattern => pattern.id));
+  for (const pattern of ADVANCED_PATTERNS) {
+    assert.equal(pattern.advanced, true, pattern.id);
+    assert.equal(regularIds.has(pattern.id), false, `${pattern.id} stays out of the family pool`);
+    assert.equal(pattern.rows.length, 29, pattern.id);
+    assert.ok(pattern.rows.every(row => row.length === 29), pattern.id);
+    const beads = targetCount(pattern);
+    assert.ok(beads > 0 && beads <= 500, `${pattern.id} bead budget`);
+    const used = new Set(pattern.rows.join("").replaceAll(".", ""));
+    assert.deepEqual([...used].sort(), Object.keys(pattern.palette).sort(), `${pattern.id} exact palette`);
+    assert.ok(used.size >= 4 && used.size <= 10, `${pattern.id} colour range`);
+    assert.deepEqual(pattern.colorways, [], `${pattern.id} skips extra colorways`);
   }
 });

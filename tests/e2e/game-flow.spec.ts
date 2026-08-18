@@ -1,16 +1,18 @@
 import { expect, test, type Page } from "@playwright/test";
 import { PATTERNS, targetCount } from "../../app/patterns";
 import { buildSpotPuzzle, spotZoneOf } from "../../app/play-content";
+import { buildVoyageWorld, createVoyageRun, neighborsOf } from "../../app/voyage";
 
 const pattern = PATTERNS[0];
 const secondaryPattern = PATTERNS[1];
 const patternTotal = targetCount(pattern);
 const zoneLabels = ["左上", "上中", "右上", "左中", "正中", "右中", "左下", "下中", "右下"];
-const openFeatured = (page: Page) => page.getByRole("button", { name: /选玩法开拼|继续拼/ });
+const openFeatured = (page: Page) => page.locator(".home-featured-copy").getByRole("button", { name: /选玩法开拼|继续拼/ });
 
 test("three offline modes provide distinct, honest interactions", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("本周精选")).toBeVisible();
+  await expect(page.getByRole("button", { name: /先认识送信的猫/ })).toBeVisible();
   await expect(page.getByLabel(/全库进度0\//)).toBeVisible();
   await expect(page.getByText("今日动态任务")).toHaveCount(0);
 
@@ -19,6 +21,7 @@ test("three offline modes provide distinct, honest interactions", async ({ page 
   await expect(picker.getByRole("button", { name: /实体制作助手/ })).toBeVisible();
   await expect(picker.getByRole("button", { name: /手机拼豆/ })).toBeVisible();
   await expect(picker.getByRole("button", { name: /轮廓猜猜/ })).toBeVisible();
+  await expect(picker.getByRole("button", { name: /夜航探图/ })).toBeVisible();
 
   await picker.getByRole("button", { name: /实体制作助手/ }).click();
   const assistantAction = page.locator(".assistant-action");
@@ -52,6 +55,26 @@ test("three offline modes provide distinct, honest interactions", async ({ page 
   await picker.getByRole("button", { name: /轮廓猜猜/ }).click();
   await expect(page.locator(".mystery-art i.silhouette").first()).toBeVisible();
   await expect(page.getByText(/轮廓已揭开 0\//)).toBeVisible();
+});
+
+test("night voyage opens a walkable bead map and remembers the first step", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /提着灯走进图案里/ }).click();
+  await expect(page.getByRole("button", { name: new RegExp(`^${pattern.name}`) })).toBeVisible();
+  await page.getByRole("button", { name: new RegExp(`^${pattern.name}`) }).click();
+  await expect(page.getByText(/灯 \d+\/\d+/)).toBeVisible();
+  const player = page.getByRole("button", { name: /米粒在这里/ });
+  await expect(player).toBeVisible();
+  const playerBox = await player.boundingBox();
+  expect(playerBox?.height).toBeGreaterThanOrEqual(44);
+
+  const world = buildVoyageWorld(pattern);
+  const run = createVoyageRun(world);
+  const next = neighborsOf(run.position, world.width, world.height).find(index => world.cells[index] !== ".");
+  expect(typeof next).toBe("number");
+  const color = pattern.palette[world.cells[next!]]?.name ?? "";
+  await page.getByRole("button", { name: `第${Math.floor(next! / world.width) + 1}行第${next! % world.width + 1}格，${color}` }).click();
+  await expect.poll(() => page.evaluate(patternId => JSON.parse(localStorage.getItem("mili-game-v3") ?? "{}").voyages?.[patternId]?.steps ?? 0, pattern.id)).toBeGreaterThan(0);
 });
 
 test("a chosen colorway persists through play, print, and the works stage", async ({ page }) => {
@@ -138,7 +161,7 @@ test("a child can complete a pattern, animate it, export it, and recover the wor
   await expect(finish).toBeVisible();
   await expect(page.locator(".game-progress b")).toHaveText("100%");
   await expect(finish.getByText("完成啦，米粒！")).toBeVisible();
-  await expect(finish.getByText("作品马上会走进小舞台")).toBeVisible();
+  await expect(finish.getByText(/走上了书桌|作品马上会走进小舞台|信送到了/)).toBeVisible();
 
   const stage = page.getByRole("dialog", { name: `${pattern.name}的小舞台` });
   await expect(stage).toBeVisible({ timeout: 5000 });
@@ -201,6 +224,19 @@ test("a child can complete a pattern, animate it, export it, and recover the wor
   await expect(page.locator(".work-story")).toHaveText("追风围巾猫在云端邮局往前冲一程。");
   await page.getByRole("button", { name: new RegExp(`${pattern.name}.*云端邮局`) }).click();
   await expect(page.getByRole("dialog", { name: `${pattern.name}的小舞台` }).locator('.stage-preview')).toHaveAttribute('data-effect', 'bubble-orbit');
+});
+
+test("finishing the scarf cat advances the story and seats it on the desk", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("mili-game-v3", JSON.stringify({ completed: ["scarf-sprint"] }));
+  });
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: /继续送信/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /月兔认得地址/ })).toBeVisible();
+  await page.getByRole("button", { name: "打开作品册" }).click();
+  await expect(page.getByRole("region", { name: "米粒的书桌" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "追风围巾猫", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /去拼出月兔邮差|去拼出月兔/ })).toBeVisible();
 });
 
 test("the installed PWA reloads its shell after the network goes offline", async ({ page, context }) => {

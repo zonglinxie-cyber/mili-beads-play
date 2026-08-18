@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { FREE_PALETTE, PATTERNS } from "../app/patterns.ts";
+import { FREE_PALETTE, PATTERNS, ADVANCED_PATTERNS } from "../app/patterns.ts";
 import { DELETE_PENDING_KEY, DELETE_TOMBSTONE, emptySaveSnapshot, FREE_DRAWING_LIMIT, normalizeSave, readLocalSave, SAVE_KEY } from "../app/save-store.ts";
+import { voyageSeedFor } from "../app/voyage.ts";
 
 const storageFrom = (values) => ({ getItem: key => values[key] ?? null });
 const primary = PATTERNS[0];
@@ -33,6 +34,7 @@ test("structurally corrupt saves are rejected instead of becoming an empty canon
   assert.throws(() => normalizeSave({ colorways: [] }), /colorways/);
   assert.throws(() => normalizeSave({ stories: [] }), /stories/);
   assert.throws(() => normalizeSave({ drawings: {} }), /drawings/);
+  assert.throws(() => normalizeSave({ voyages: [] }), /voyages/);
   assert.deepEqual(readLocalSave(storageFrom({ [SAVE_KEY]: JSON.stringify({ boards: [] }) })), emptySaveSnapshot());
 });
 
@@ -109,4 +111,75 @@ test("story personalization is strictly allowlisted per pattern", () => {
 test("the native deletion tombstone is versioned and uses a separate durable key", () => {
   assert.notEqual(DELETE_PENDING_KEY, SAVE_KEY);
   assert.deepEqual(JSON.parse(DELETE_TOMBSTONE), { version: 1, pending: true });
+});
+
+test("desk placements survive a round-trip and drop figures that left the album", () => {
+  const desk = {
+    scene: "candy-park",
+    effect: "confetti-rain",
+    items: [
+      { slot: 0, kind: "pattern", id: primary.id },
+      { slot: 1, kind: "pattern", id: secondary.id },
+    ],
+  };
+  const kept = normalizeSave({ completed: [primary.id], desk });
+  assert.deepEqual(kept.desk, {
+    scene: "candy-park",
+    effect: "confetti-rain",
+    items: [{ slot: 0, kind: "pattern", id: primary.id }],
+  });
+  assert.deepEqual(normalizeSave({ completed: [], boards: {}, activityDates: [] }).desk, emptySaveSnapshot().desk);
+  assert.deepEqual(emptySaveSnapshot().desk, { scene: "starship-cabin", effect: "star-trail", items: [] });
+  assert.deepEqual(emptySaveSnapshot().voyages, {});
+});
+
+test("voyage runs persist per known pattern and drop invented maps", () => {
+  const run = {
+    patternId: primary.id,
+    seed: voyageSeedFor(primary.id, "2026-08-18"),
+    colorwayId: "default",
+    position: 0,
+    visited: [0],
+    ghosts: [],
+    charges: { X: 9 },
+    lantern: 4,
+    lastGlow: 0,
+    stamps: ["invented"],
+    letters: [],
+    carrying: null,
+    carryTouched: [],
+    carryWindSteps: 0,
+    carryPassedGlow: false,
+    encounters: [],
+    steps: 3,
+    mixA: null,
+    mixB: null,
+    streakColor: null,
+    streakLen: 0,
+    complete: false,
+  };
+  const save = normalizeSave({
+    voyages: {
+      [primary.id]: run,
+      "unknown-pattern": run,
+    },
+  });
+  assert.equal(save.voyages[primary.id]?.patternId, primary.id);
+  assert.equal(save.voyages[primary.id]?.steps, 3);
+  assert.equal(save.voyages["unknown-pattern"], undefined);
+  assert.deepEqual(normalizeSave({ completed: [], boards: {}, activityDates: [] }).voyages, {});
+});
+
+test("advanced pattern boards persist at their native grid size", () => {
+  const pattern = ADVANCED_PATTERNS[0];
+  const target = pattern.rows.join("").split("");
+  const first = target.findIndex(cell => cell !== ".");
+  const board = Array(target.length).fill(".");
+  board[first] = target[first];
+  const save = normalizeSave({ completed: [pattern.id], boards: { [pattern.id]: board } });
+  assert.deepEqual(save.completed, [pattern.id]);
+  assert.equal(save.boards[pattern.id].length, target.length);
+  assert.equal(save.boards[pattern.id].filter(cell => cell !== ".").length, 1);
+  const tooSmall = normalizeSave({ boards: { [pattern.id]: Array(18 * 18).fill(".") } });
+  assert.equal(tooSmall.boards[pattern.id], undefined);
 });
