@@ -154,6 +154,21 @@ const zoneIndices = (zone: number, boardSize = BOARD_SIZE) => {
     return row * boardSize + col;
   });
 };
+const ADVANCED_PANE_LABELS = ["左上", "右上", "左下", "右下"];
+const advancedPaneSpan = (boardSize: number) => Math.ceil(boardSize / 2);
+const advancedPaneIndices = (pane: number, boardSize: number) => {
+  const span = advancedPaneSpan(boardSize);
+  const col = pane % 2 === 0 ? 0 : boardSize - span;
+  const row = pane < 2 ? 0 : boardSize - span;
+  const indices: number[] = [];
+  for (let y = 0; y < span; y += 1) {
+    for (let x = 0; x < span; x += 1) indices.push((row + y) * boardSize + col + x);
+  }
+  return indices;
+};
+const firstOpenPane = (target: string[], board: string[], boardSize: number, from = 0) =>
+  Array.from({ length: ADVANCED_PANE_LABELS.length }, (_, offset) => (from + offset) % ADVANCED_PANE_LABELS.length)
+    .find(pane => advancedPaneIndices(pane, boardSize).some(index => target[index] !== "." && board[index] !== target[index])) ?? 0;
 
 const firstOpenColor = (target: string[], board: string[], paletteKeys: string[]) =>
   paletteKeys.find(color => target.some((cell, index) => cell === color && board[index] !== color)) ?? paletteKeys[0];
@@ -232,9 +247,10 @@ function StagePreview({ pattern, selection, compact = false }: { pattern: Patter
   </div>;
 }
 
-function ZoneThumb({ pattern, board, target, zone, spot }: { pattern: Pattern; board: string[]; target: string[]; zone: number; spot?: { swapped: Set<number>; found: Set<number>; otherPalette: Pattern["palette"] } }) {
-  return <span className="zone-thumb" aria-hidden="true">
-    {zoneIndices(zone).map(index => {
+function ZoneThumb({ pattern, board, target, zone, indices, columns = ZONE_SIZE, spot }: { pattern: Pattern; board: string[]; target: string[]; zone: number; indices?: number[]; columns?: number; spot?: { swapped: Set<number>; found: Set<number>; otherPalette: Pattern["palette"] } }) {
+  const cells = indices ?? zoneIndices(zone);
+  return <span className="zone-thumb" style={{ "--cols": columns } as React.CSSProperties} aria-hidden="true">
+    {cells.map(index => {
       const cell = target[index];
       if (cell === ".") return <i key={index} className="empty" />;
       const swapped = Boolean(spot?.swapped.has(index));
@@ -444,7 +460,8 @@ export default function Home() {
   const activeStageEffect = STAGE_EFFECTS.find(item => item.id === activeStageSelection.effect) ?? STAGE_EFFECTS[0];
   const activeStorySelection = animationPattern ? (stories[animationPattern.id] ?? defaultStorySelection(animationPattern.id)) : undefined;
   const activeStory = animationPattern ? composeStory(animationPattern.id, activeStorySelection, activeStageSelection.scene, activeStageSelection.effect) : undefined;
-  const activeZoneIndices = zoneIndices(zone, currentBoardSize);
+  const activeZoneIndices = isAdvancedPlay ? advancedPaneIndices(zone % ADVANCED_PANE_LABELS.length, currentBoardSize) : zoneIndices(zone, currentBoardSize);
+  const playColumns = isAdvancedPlay ? advancedPaneSpan(currentBoardSize) : ZONE_SIZE;
   const activeZoneTargets = activeZoneIndices.filter(index => target[index] !== ".");
   const activeZoneDone = activeZoneTargets.filter(index => board[index] === target[index]).length;
   const activeZoneColorTargets = activeZoneIndices.filter(index => target[index] === selected);
@@ -736,14 +753,14 @@ export default function Home() {
     setMistakes(0); setHint(nextMode !== "mystery"); setMode(nextMode ?? null); setUndoStack([]);
     setReplay(false); replayRef.current = false; setSpotPuzzle(null); setSpotFound([]);
     if (isAdvanced) setTapMode(true);
-    setZone(firstOpenZone(nextTarget, safeBoard, startColor, 0, boardSize)); setCelebrate(false); setTab("game"); window.scrollTo(0, 0);
+    setZone(isAdvanced ? firstOpenPane(nextTarget, safeBoard, boardSize) : firstOpenZone(nextTarget, safeBoard, startColor, 0, boardSize)); setCelebrate(false); setTab("game"); window.scrollTo(0, 0);
     if (nextMode) say(companionLine(id, nextMode, "start"));
   };
 
   const enterPlayMode = (nextMode: PlayMode) => {
     const startColor = firstOpenColor(target, boardRef.current, keys(pattern));
     setSelected(startColor);
-    setZone(firstOpenZone(target, boardRef.current, startColor, 0, currentBoardSize));
+    setZone(isAdvancedPlay ? firstOpenPane(target, boardRef.current, currentBoardSize) : firstOpenZone(target, boardRef.current, startColor, 0, currentBoardSize));
     setHint(nextMode !== "mystery");
     setUndoStack([]);
     setMode(nextMode);
@@ -882,8 +899,12 @@ export default function Home() {
       const nextColor = firstOpenColor(target, next, keys(pattern));
       setSelected(nextColor);
       if (mode === "assistant") setZone(firstOpenZone(target, next, nextColor, 0, currentBoardSize));
-      else if (zoneComplete && !isAdvancedPlay) {
-        const nextZone = Array.from({ length: 9 }, (_, offset) => (zone + offset + 1) % 9).find(candidate => zoneIndices(candidate, currentBoardSize).some(zoneIndex => target[zoneIndex] !== "." && next[zoneIndex] !== target[zoneIndex]));
+      else if (zoneComplete) {
+        const paneCount = isAdvancedPlay ? ADVANCED_PANE_LABELS.length : 9;
+        const nextZone = Array.from({ length: paneCount }, (_, offset) => (zone + offset + 1) % paneCount).find(candidate => {
+          const cells = isAdvancedPlay ? advancedPaneIndices(candidate, currentBoardSize) : zoneIndices(candidate, currentBoardSize);
+          return cells.some(zoneIndex => target[zoneIndex] !== "." && next[zoneIndex] !== target[zoneIndex]);
+        });
         if (nextZone !== undefined) setZone(nextZone);
       }
       say(mode === "mystery"
@@ -897,9 +918,14 @@ export default function Home() {
       say(companionLine(pattern.id, "assistant", "zoneNext", { zone: ZONE_LABELS[nextZone], color: pattern.palette[color].name }));
       return;
     }
-    if (zoneComplete && !isAdvancedPlay) {
-      const nextZone = Array.from({ length: 9 }, (_, offset) => (zone + offset + 1) % 9).find(candidate => zoneIndices(candidate, currentBoardSize).some(zoneIndex => target[zoneIndex] !== "." && next[zoneIndex] !== target[zoneIndex]));
-      if (nextZone !== undefined) { setZone(nextZone); say(companionLine(pattern.id, mode ?? "mobile", "zoneDone", { zone: ZONE_LABELS[nextZone] })); }
+    if (zoneComplete) {
+      const paneCount = isAdvancedPlay ? ADVANCED_PANE_LABELS.length : 9;
+      const labels = isAdvancedPlay ? ADVANCED_PANE_LABELS : ZONE_LABELS;
+      const nextZone = Array.from({ length: paneCount }, (_, offset) => (zone + offset + 1) % paneCount).find(candidate => {
+        const cells = isAdvancedPlay ? advancedPaneIndices(candidate, currentBoardSize) : zoneIndices(candidate, currentBoardSize);
+        return cells.some(zoneIndex => target[zoneIndex] !== "." && next[zoneIndex] !== target[zoneIndex]);
+      });
+      if (nextZone !== undefined) { setZone(nextZone); say(companionLine(pattern.id, mode ?? "mobile", "zoneDone", { zone: labels[nextZone] })); }
     }
   };
 
@@ -1227,6 +1253,10 @@ export default function Home() {
   const featuredPlaced = placedCount(FEATURED_PATTERN, savedBoards[FEATURED_PATTERN.id]);
   const featuredTotal = targetCount(FEATURED_PATTERN);
   const featuredContinue = featuredPlaced > 0 && !completed.includes(FEATURED_PATTERN.id);
+  const familyDone = PATTERNS.filter(item => completed.includes(item.id)).length;
+  const advancedDone = ADVANCED_PATTERNS.filter(item => completed.includes(item.id)).length;
+  const leadAdvanced = ADVANCED_PATTERNS.find(item => !completed.includes(item.id)) ?? ADVANCED_PATTERNS[0];
+  const openAdvancedLibrary = () => { setAdvancedFilter(true); setTab("library"); };
   const dismissIosInstallHint = () => {
     localStorage.setItem(IOS_INSTALL_HINT_KEY, "dismissed");
     notifyIosInstallHint();
@@ -1280,14 +1310,17 @@ export default function Home() {
           <p className="home-catalog-hint">爱心相框、小猫立牌、甜筒和奶茶，拼完能立在书桌上</p>
           <div className="home-grid">{PATTERNS.map(p=><HomeTile key={p.id} pattern={p} colorwayId={colorways[p.id]} onOpen={()=>openGame(p.id)} finished={completed.includes(p.id)} placed={placedCount(p, savedBoards[p.id])} />)}</div>
         </section>
-        {ADVANCED_PATTERNS.length > 0 && (
-          <section className="home-catalog home-advanced-block">
-            <h2>进阶挑战 · {ADVANCED_PATTERNS.length} 张大图纸</h2>
-            <p className="home-catalog-hint">飞龙、火箭、虎鲨都在这里。29×29，慢慢拼</p>
-            <div className="home-grid">{ADVANCED_PATTERNS.map(p=><HomeTile key={p.id} pattern={p} colorwayId={colorways[p.id]} onOpen={()=>openGame(p.id)} finished={completed.includes(p.id)} placed={placedCount(p, savedBoards[p.id])} />)}</div>
-          </section>
+        {leadAdvanced && (
+          <>
+            <button className="home-advanced" onClick={openAdvancedLibrary}>
+              <span className="home-advanced-art" aria-hidden="true"><Art pattern={resolvedPattern(leadAdvanced, colorways[leadAdvanced.id])} /></span>
+              <span><small>进阶挑战</small><b>{leadAdvanced.name}</b><i>大图纸分成四块放大，一块一块拼</i></span>
+              <em>{advancedDone ? `已完成 ${advancedDone}` : "去挑战"}</em>
+            </button>
+            <div className="home-advanced-row" aria-label="进阶图纸">{ADVANCED_PATTERNS.map(p=><HomeTile key={p.id} pattern={p} colorwayId={colorways[p.id]} onOpen={()=>openGame(p.id)} finished={completed.includes(p.id)} placed={placedCount(p, savedBoards[p.id])} />)}</div>
+          </>
         )}
-        <section className="quick-status"><div><span>{streak ? <Flame aria-hidden="true"/> : <Sparkles aria-hidden="true"/>}</span><p><b>{streak ? `连续创作 ${streak} 天` : "今天来点亮第一颗星"}</b><small>{completed.length ? `已收藏 ${completed.length} 个作品` : "完成一张图纸，记录会留在手机里"}</small></p></div><em aria-label={`全库进度${completed.length}/${PATTERNS.length}`}>全库 {completed.length}/{PATTERNS.length}</em></section>
+        <section className="quick-status"><div><span>{streak ? <Flame aria-hidden="true"/> : <Sparkles aria-hidden="true"/>}</span><p><b>{streak ? `连续创作 ${streak} 天` : "今天来点亮第一颗星"}</b><small>{completed.length ? `已收藏 ${completed.length} 个作品` : "完成一张图纸，记录会留在手机里"}</small></p></div><em aria-label={`全库进度${familyDone}/${PATTERNS.length}`}>全库 {familyDone}/{PATTERNS.length}</em></section>
         <button className="home-mystery" onClick={()=>openGame(MYSTERY_PATTERN.id,"mystery")}>
           <span aria-hidden="true"><MysteryArt pattern={resolvedPattern(MYSTERY_PATTERN, colorways[MYSTERY_PATTERN.id])} revealed={[]}/></span>
           <span><small>轮廓猜猜</small><b>先看剪影再揭晓</b></span>
@@ -1302,7 +1335,7 @@ export default function Home() {
         <div className="page-head">
           <small>{advancedFilter ? "进阶挑战" : "图纸宝库"}</small>
           <h1>{advancedFilter ? "选一张大图纸" : "今天拼哪个？"}</h1>
-          {advancedFilter && <p>29×29 大网格 · 慢慢拼，完成就是大作品</p>}
+          {advancedFilter && <p>大图纸分成左上、右上、左下、右下四块，放大后再点格子。</p>}
         </div>
         <div className="filters">{categories.map(c=><button key={c} className={(c==="进阶" ? advancedFilter : !advancedFilter && filter===c)?"active":""} onClick={()=>{ if (c==="进阶") setAdvancedFilter(true); else { setAdvancedFilter(false); setFilter(c); } }}>{c}</button>)}</div>
         <div className="home-grid">{(advancedFilter ? ADVANCED_PATTERNS : PATTERNS.filter(p=>filter==="全部"||p.category===filter)).map(p=><HomeTile key={p.id} pattern={p} colorwayId={colorways[p.id]} onOpen={()=>openGame(p.id)} finished={completed.includes(p.id)} placed={placedCount(p, savedBoards[p.id])} />)}</div>
@@ -1319,13 +1352,14 @@ export default function Home() {
           {mode === "spot" && spotPuzzle && <div className="reference compact-reference"><div><span>我的配色 · {spotPuzzle.homeName}</span></div><Art pattern={pattern} /></div>}
           {mode === "spot" && spotPuzzle ? <div className="color-goal"><i style={{background: spotOther?.palette[target.find(cell => cell !== ".") ?? ""]?.color ?? "#ec6f5d"}}/><p><b>找出换了队服的豆子</b><small>对照{spotPuzzle.homeName}，还差 {spotLeft} 颗 · 点错 {mistakes}</small></p></div> : <div className="color-goal"><i style={{background:pattern.palette[selected].color}}/><p><b>现在拼：{pattern.palette[selected].name}</b><small>{currentColorDone}/{currentColorTotal} 颗 · {mode === "mystery" ? (completedColors.includes(selected) ? "这一层已揭开" : `还差 ${currentColorTotal-currentColorDone} 颗揭开`) : mode === "assistant" ? "点这个颜色的豆子，整组会一起记下" : tapMode ? "先选颜色，再点格子放豆；点已放豆子可擦掉" : hint ? "点空格放豆，点已放的豆子可擦掉" : "提示已关闭，点已放的豆子可擦掉"}</small></p></div>}
           {!isAdvancedPlay && <div className="zone-picker" aria-label="选择放大分区"><div><b>现在放大：{ZONE_LABELS[zone]}</b><small>{mode === "spot" ? `${activeZoneIndices.filter(index => spotSwapped.has(index) && spotFoundSet.has(index)).length}/${activeZoneIndices.filter(index => spotSwapped.has(index)).length} 颗` : `${activeZoneDone}/${activeZoneTargets.length} 颗`}</small></div><div>{ZONE_LABELS.map((label,index)=>{const part=zoneIndices(index);const partTargets=part.filter(i=>target[i]!==".");const partDone=partTargets.filter(i=>board[i]===target[i]).length;const empty=!partTargets.length;const zoneSwaps=part.filter(i=>spotSwapped.has(i));const zoneSwapFound=zoneSwaps.filter(i=>spotFoundSet.has(i)).length;const zoneComplete=mode==="spot"?zoneSwaps.length>0&&zoneSwapFound===zoneSwaps.length:partTargets.length>0&&partDone===partTargets.length;return <button key={label} className={`${zone===index?"active":""}${empty?" empty-zone":""}${zoneComplete?" zone-done":""}`} onClick={()=>{setZone(index);gameRef.current?.scrollIntoView({block:"nearest"})}} aria-pressed={zone===index} aria-label={mode==="spot"?`${label}，找到${zoneSwapFound}/${zoneSwaps.length}颗`:`${label}，${partDone}/${partTargets.length}颗`}><ZoneThumb pattern={pattern} board={board} target={target} zone={index} spot={mode==="spot"&&spotPuzzle&&spotOther?{swapped:spotSwapped,found:spotFoundSet,otherPalette:spotOther.palette}:undefined}/><b>{label}</b>{zoneComplete&&<em><Check aria-hidden="true"/></em>}</button>})}</div></div>}
+          {isAdvancedPlay && <div className="advanced-map"><div className="reference advanced-reference compact-reference"><div><span>整张图纸</span><small>现在看{ADVANCED_PANE_LABELS[zone % ADVANCED_PANE_LABELS.length]}</small></div><Art pattern={pattern} /></div><div className="zone-picker advanced-panes" aria-label="选择放大区域"><div><b>现在放大：{ADVANCED_PANE_LABELS[zone % ADVANCED_PANE_LABELS.length]}</b><small>{activeZoneDone}/{activeZoneTargets.length} 颗</small></div><div>{ADVANCED_PANE_LABELS.map((label,index)=>{const part=advancedPaneIndices(index, currentBoardSize);const partTargets=part.filter(i=>target[i]!==".");const partDone=partTargets.filter(i=>board[i]===target[i]).length;const zoneComplete=partTargets.length>0&&partDone===partTargets.length;return <button key={label} className={`${zone % ADVANCED_PANE_LABELS.length===index?"active":""}${zoneComplete?" zone-done":""}`} onClick={()=>{setZone(index);gameRef.current?.scrollIntoView({block:"nearest"})}} aria-pressed={zone % ADVANCED_PANE_LABELS.length===index} aria-label={`${label}，${partDone}/${partTargets.length}颗`}><ZoneThumb pattern={pattern} board={board} target={target} zone={index} indices={part} columns={playColumns} /><b>{label}</b>{zoneComplete&&<em><Check aria-hidden="true"/></em>}</button>})}</div></div></div>}
         </div>
         <div className={`play-board${isAdvancedPlay ? " advanced" : ""}`} ref={gameRef} onPointerLeave={()=>setDrawing(false)}>
           <div className="companion" role="status" aria-live="polite" aria-label="角色说话">
             <img src={HEADER_AVATAR} srcSet={`${HEADER_AVATAR_2X} 2x`} width="38" height="38" alt="" />
             <p>{message || (mode === "spot" ? companionIdleSpot(spotLeft) : companionIdle(pattern.id, pattern.palette[selected]?.name ?? ""))}</p>
           </div>
-          <div className={`touch-grid${mode==="assistant"?" preview":""}${isAdvancedPlay?" advanced":""}`} style={{"--cols": isAdvancedPlay ? currentBoardSize : ZONE_SIZE} as React.CSSProperties}>{activeZoneIndices.map(index=>{const cell=target[index];if(cell===".") return <span key={index} className="outside" aria-hidden="true"/>;const swapped=spotSwapped.has(index);const found=spotFoundSet.has(index);const spotColor=mode==="spot"?((swapped&&!found?spotOther?.palette[cell]?.color:pattern.palette[cell].color)??pattern.palette[cell].color):undefined;const label=mode==="spot"?`第${Math.floor(index/currentBoardSize)+1}行第${index%currentBoardSize+1}格，${found?"已找回家":swapped?"换了队服":"原来的颜色"}`:`第${Math.floor(index/currentBoardSize)+1}行第${index%currentBoardSize+1}格，${pattern.palette[cell].name}`;return <button key={index} aria-label={label} className={`${mode==="spot"||board[index]!=="."?"placed":""} ${hint&&mode!=="assistant"&&mode!=="spot"&&cell===selected&&board[index]==="."?"target-hint":""} ${mode==="assistant"&&cell===selected?"assistant-target":""} ${mode==="spot"&&swapped&&!found?"spot-swap":""} ${mode==="spot"&&found?"spot-found":""}`} style={mode==="spot"?{background:spotColor}:board[index]!=="."?{background:pattern.palette[board[index]].color}:undefined} onPointerDown={e=>{ if (!(isAdvancedPlay && tapMode)) e.preventDefault(); handlePlayPointerDown(index); }} onPointerEnter={e=>{if(mode==="mobile"&&tapMode) return; if(mode!=="assistant"&&mode!=="spot"&&drawing){e.preventDefault(); void paint(index);}}} onPointerUp={()=>setDrawing(false)} />})}</div>{mode==="assistant"&&<div className="assistant-action"><p><b>{ZONE_LABELS[zone]} · {pattern.palette[selected].name}</b><small>本区还剩 {Math.max(0,activeZoneColorTargets.length-activeZoneColorDone)} 颗，共 {activeZoneColorTargets.length} 颗</small></p><button onClick={()=>void toggleZoneColor()} disabled={!activeZoneColorTargets.length}>{activeZoneColorTargets.length>0&&activeZoneColorDone===activeZoneColorTargets.length?"取消这一组":"这一组已拼好"}</button></div>}
+          <div className={`touch-grid${mode==="assistant"?" preview":""}${isAdvancedPlay?" advanced":""}`} style={{"--cols": playColumns} as React.CSSProperties}>{activeZoneIndices.map(index=>{const cell=target[index];if(cell===".") return <span key={index} className="outside" aria-hidden="true"/>;const swapped=spotSwapped.has(index);const found=spotFoundSet.has(index);const spotColor=mode==="spot"?((swapped&&!found?spotOther?.palette[cell]?.color:pattern.palette[cell].color)??pattern.palette[cell].color):undefined;const label=mode==="spot"?`第${Math.floor(index/currentBoardSize)+1}行第${index%currentBoardSize+1}格，${found?"已找回家":swapped?"换了队服":"原来的颜色"}`:`第${Math.floor(index/currentBoardSize)+1}行第${index%currentBoardSize+1}格，${pattern.palette[cell].name}`;return <button key={index} aria-label={label} className={`${mode==="spot"||board[index]!=="."?"placed":""} ${hint&&mode!=="assistant"&&mode!=="spot"&&cell===selected&&board[index]==="."?"target-hint":""} ${mode==="assistant"&&cell===selected?"assistant-target":""} ${mode==="spot"&&swapped&&!found?"spot-swap":""} ${mode==="spot"&&found?"spot-found":""}`} style={mode==="spot"?{background:spotColor}:board[index]!=="."?{background:pattern.palette[board[index]].color}:undefined} onPointerDown={e=>{ if (!(isAdvancedPlay && tapMode)) e.preventDefault(); handlePlayPointerDown(index); }} onPointerEnter={e=>{if(mode==="mobile"&&tapMode) return; if(mode!=="assistant"&&mode!=="spot"&&drawing){e.preventDefault(); void paint(index);}}} onPointerUp={()=>setDrawing(false)} />})}</div>{mode==="assistant"&&<div className="assistant-action"><p><b>{ZONE_LABELS[zone]} · {pattern.palette[selected].name}</b><small>本区还剩 {Math.max(0,activeZoneColorTargets.length-activeZoneColorDone)} 颗，共 {activeZoneColorTargets.length} 颗</small></p><button onClick={()=>void toggleZoneColor()} disabled={!activeZoneColorTargets.length}>{activeZoneColorTargets.length>0&&activeZoneColorDone===activeZoneColorTargets.length?"取消这一组":"这一组已拼好"}</button></div>}
         </div>
         {mode !== "spot" && <div className="palette"><div className="palette-head"><b>选择豆子颜色</b><button onClick={()=>setConfirmReset(true)}><RotateCcw aria-hidden="true"/>重新开始</button></div><div>{keys(pattern).map(k=>{const count=target.filter(v=>v===k).length;const placed=board.filter((v,i)=>v===k&&v===target[i]).length;return <button key={k} className={selected===k?"active":""} onClick={()=>setSelected(k)}><i style={{background:pattern.palette[k].color}}/><span>{pattern.palette[k].name}<small>{placed}/{count}</small></span>{placed===count&&<em><Check aria-hidden="true"/></em>}</button>})}</div></div>}
         {mode !== "spot" && <details className="pattern-more"><summary>{mode === "assistant" ? "对照完整图纸和备豆表" : "查看完整图纸和说明"}</summary><div className="reference"><Art pattern={pattern} /></div><section className="pattern-guide" aria-label="图纸说明"><div><small>{patternInfo.difficultyLabel}</small><b>{formatEstimatedMinutes(patternInfo.estimatedMinutes)}</b><p>{patternInfo.difficultyWhy}</p></div><div><small>玩法灵感</small><b>{patternInfo.playIdea}</b><p>这是故事灵感，不是儿童加工说明；需要成型或检查时交给家长。</p></div><ul>{patternInfo.assemblyNotes.map(note=><li key={note}>{note}</li>)}</ul><div className="material-table" role="table" aria-label="按颜色计算的建议准备量"><div role="row"><b role="columnheader">颜色</b><b role="columnheader">实需</b><b role="columnheader">备用</b><b role="columnheader">建议准备</b></div>{patternSupplies.map(item=><div role="row" key={item.key}><span role="cell"><i style={{background:item.color}}/>{item.name}</span><span role="cell">{item.required}</span><span role="cell">+{item.reserve}</span><strong role="cell">{item.recommended}</strong></div>)}</div><p className="child-safety-line compact">{patternInfo.childFinishLine}：保持图案在拼板上，不要自己做后续加工。</p></section></details>}

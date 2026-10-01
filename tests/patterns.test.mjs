@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { PATTERNS, ADVANCED_PATTERNS, connectedComponents, targetCount } from "../app/patterns.ts";
+import { deriveDifficultyAxes } from "../app/pattern-metadata.ts";
 
 const FIRST_RELEASE_IDS = ["scarf-sprint", "heart-frame", "bow-cat", "berry-sundae", "berry-boba", "balloon-bear", "moon-rabbit", "sushi-train", "whale-castle", "fox-kite", "otter-sub", "skate-duck"];
 const REDTEAM_EXCLUDED_IDS = ["rocket-cat", "star-dragon", "frog-post", "rainbow-duck", "penguin-igloo"];
@@ -83,5 +84,19 @@ test("advanced catalog is a separate 29×29 challenge pool", () => {
     assert.deepEqual([...used].sort(), Object.keys(pattern.palette).sort(), `${pattern.id} exact palette`);
     assert.ok(used.size >= 4 && used.size <= 10, `${pattern.id} colour range`);
     assert.deepEqual(pattern.colorways, [], `${pattern.id} skips extra colorways`);
+    assert.equal(pattern.provenance?.method.includes("占位"), false, `${pattern.id} is a finished drawing`);
+    assert.ok(beads >= 250, `${pattern.id} is a large map`);
+    const pieces = connectedComponents(pattern);
+    assert.deepEqual(pattern.pieceSizes, pieces, `${pattern.id} honest piece declaration`);
+    assert.equal(pieces.length, 1, `${pattern.id} stays one physical piece`);
+    for (const symbol of used) {
+      const count = pattern.rows.join("").split("").filter(cell => cell === symbol).length;
+      assert.ok(count >= 12, `${pattern.id}:${symbol} is a real colour, not a speck`);
+    }
+    assert.equal(pattern.layers.length, 29, `${pattern.id} layers`);
+    assert.ok(pattern.layers.join("").split("").every((layer, index) =>
+      (pattern.rows.join("")[index] === ".") === (layer === ".") && ".BPF".includes(layer)
+    ), `${pattern.id} exact layer occupancy`);
+    assert.deepEqual(pattern.difficultyAxes, deriveDifficultyAxes(pattern), `${pattern.id} difficulty axes`);
   }
 });
