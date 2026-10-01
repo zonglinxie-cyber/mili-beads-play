@@ -82,7 +82,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #d15d55;outline-offset:3p
 .zone-picker>div:last-child{grid-template-columns:repeat(3,1fr)!important;gap:8px}
 .zone-picker button{position:relative;aspect-ratio:1;min-height:72px;padding:5px;display:grid;place-items:center}
 .zone-picker button.empty-zone{opacity:.42}
-.zone-thumb{display:grid;grid-template-columns:repeat(6,1fr);width:100%;aspect-ratio:1;gap:1px;padding:2px;border-radius:8px;background:#efe4d4;overflow:hidden}
+.zone-thumb{display:grid;grid-template-columns:repeat(var(--cols, 6),1fr);width:100%;aspect-ratio:1;gap:1px;padding:2px;border-radius:8px;background:#efe4d4;overflow:hidden}
 .zone-thumb i{display:block;min-width:0;min-height:0;aspect-ratio:1;border-radius:1px}
 .zone-thumb i.empty{background:#f7efe4}
 .zone-thumb i.pending{opacity:.38}
@@ -231,14 +231,34 @@ button:focus-visible,a:focus-visible{outline:3px solid #d15d55;outline-offset:3p
 .works-drawings{margin-top:24px}
 .works-drawings h2{font-size:14px;margin:0 0 10px;padding:0 4px}
 
-/* 进阶挑战入口与大图棋盘 */
-.home-advanced-block{margin:16px 0 0;padding:12px 10px 14px;border-radius:22px;background:linear-gradient(135deg,#fff3e0,#fce4ec);border:2px solid #ff8a65}
-.home-advanced-block h2{color:#c43e11}
-.home-advanced-block .home-catalog-hint{color:#8d4a3a}
+/* 进阶挑战入口与分块放大 */
+.home-advanced{display:grid;grid-template-columns:72px 1fr auto;gap:12px;align-items:center;width:100%;margin:0 0 10px;padding:12px;border-radius:22px;background:linear-gradient(135deg,#fff3e0,#fde7ef);border:2px solid #ff8a65;color:var(--ink);text-align:left;box-shadow:var(--shadow)}
+.home-advanced-art{width:72px;height:72px;display:block;padding:4px;border-radius:16px;background:#fff}
+.home-advanced-art .art{width:100%}
+.home-advanced>span{display:grid;gap:2px;min-width:0}
+.home-advanced small{font-size:11px;font-weight:900;letter-spacing:1px;color:#c43e11}
+.home-advanced b{font-size:18px;line-height:1.2}
+.home-advanced i{font-style:normal;font-size:12px;color:var(--muted);font-weight:700}
+.home-advanced em{font-style:normal;font-size:13px;font-weight:900;background:#ff8a65;color:#fff;border-radius:12px;padding:10px 12px;white-space:nowrap}
+.home-advanced-row{display:flex;gap:8px;overflow-x:auto;margin:0 0 14px;padding:0 0 4px;scroll-snap-type:x mandatory}
+.home-advanced-row .home-tile{flex:0 0 148px;scroll-snap-align:start}
 .home-tile.advanced-tile{border-color:#ff8a65}
-.play-board.advanced{overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
-.touch-grid.advanced{max-width:none;width:max(100%,580px);gap:1.5px;padding:2px;touch-action:manipulation}
-.touch-grid.advanced button,.touch-grid.advanced span{min-height:20px;min-width:20px;border-radius:2px}
+.advanced-map{display:grid;grid-template-columns:64px 1fr;gap:8px;align-items:center;padding:6px 8px 8px;background:#fffdf8;border-top:1px solid var(--line)}
+.advanced-reference{display:grid;justify-items:center;gap:2px;padding:0;background:transparent}
+.advanced-reference>div{display:grid;justify-items:center;gap:0}
+.advanced-reference span,.advanced-reference small{font-size:10px;font-weight:800}
+.advanced-reference .art{width:52px;margin:0}
+.zone-picker.advanced-panes{padding:0;border:0;background:transparent}
+.zone-picker.advanced-panes>div:first-child{margin-bottom:2px}
+.zone-picker.advanced-panes>div:last-child{grid-template-columns:repeat(4,1fr);gap:4px}
+.zone-picker.advanced-panes button{aspect-ratio:auto;min-height:0;padding:3px 2px 4px;display:grid;justify-items:center;gap:1px}
+.zone-picker.advanced-panes .zone-thumb{width:34px}
+.play-board.advanced{overflow:visible;display:flex;flex-direction:column;padding:6px 8px 8px}
+.play-board.advanced .touch-grid{order:-1}
+.play-board.advanced .companion{order:1;margin:8px auto 0;padding:6px 8px}
+.play-board.advanced .companion img{width:28px;height:28px}
+.touch-grid.advanced{max-width:440px;width:100%;gap:2px;padding:2px;touch-action:manipulation}
+.touch-grid.advanced button,.touch-grid.advanced span{min-height:0;min-width:0;border-radius:3px}
 .stage-character-advanced{left:10%;right:10%;bottom:2%}
 .stage-character-advanced>.layered-art{width:80%}
 .stage-preview.advanced-stage .stage-character-advanced{left:8%;right:8%}
